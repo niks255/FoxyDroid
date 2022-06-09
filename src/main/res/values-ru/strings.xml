@@ -165,5 +165,7 @@
   <string name="website">Веб-сайт</string>
   <string name="ok">OK</string>
     <string name="share">Поделиться</string>
+    <string name="clear_cache">Очистить кэш</string>
+  <string name="clear_cache_toast">Кэш очищен</string>
 
 </resources>

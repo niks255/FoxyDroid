@@ -21,6 +21,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.SearchView
 import android.widget.TextView
+import android.widget.Toast
 import android.widget.Toolbar
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -169,6 +170,13 @@ class TabsFragment: ScreenFragment() {
         .setIcon(Utils.getToolbarIcon(toolbar.context, R.drawable.ic_sync))
         .setOnMenuItemClickListener {
           syncConnection.binder?.sync(SyncService.SyncRequest.MANUAL)
+          true
+        }
+
+      add(1, 0, 0, R.string.clear_cache)
+        .setOnMenuItemClickListener {
+          context?.cacheDir?.deleteRecursively()
+          Toast.makeText(requireContext(), R.string.clear_cache_toast, Toast.LENGTH_SHORT).show()
           true
         }
 
