@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toolbar
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -22,6 +23,11 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.content.ProductPreferences
 import nya.kitsunyan.foxydroid.database.Database
@@ -30,6 +36,7 @@ import nya.kitsunyan.foxydroid.entity.Product
 import nya.kitsunyan.foxydroid.entity.ProductPreference
 import nya.kitsunyan.foxydroid.entity.Release
 import nya.kitsunyan.foxydroid.entity.Repository
+import nya.kitsunyan.foxydroid.installer.AppInstaller
 import nya.kitsunyan.foxydroid.service.Connection
 import nya.kitsunyan.foxydroid.service.DownloadService
 import nya.kitsunyan.foxydroid.utility.RxUtils
@@ -40,7 +47,6 @@ import nya.kitsunyan.foxydroid.widget.DividerItemDecoration
 class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
   companion object {
     private const val EXTRA_PACKAGE_NAME = "packageName"
-
     private const val STATE_LAYOUT_MANAGER = "layoutManager"
     private const val STATE_ADAPTER = "adapter"
   }
@@ -53,7 +59,7 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
 
   private class Nullable<T>(val value: T?)
 
-  private enum class Action(val id: Int, val adapterAction: ProductAdapter.Action, val iconResId: Int) {
+  private enum class Action(val id: Int, val adapterAction: ProductAdapter.Action, val iconResId: Int,) {
     INSTALL(1, ProductAdapter.Action.INSTALL, R.drawable.ic_archive),
     UPDATE(2, ProductAdapter.Action.UPDATE, R.drawable.ic_archive),
     LAUNCH(3, ProductAdapter.Action.LAUNCH, R.drawable.ic_launch),
@@ -62,7 +68,7 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
   }
 
   private class Installed(val installedItem: InstalledItem, val isSystem: Boolean,
-    val launcherActivities: List<Pair<String, String>>)
+    val launcherActivities: List<Pair<String, String>>,)
 
   val packageName: String
     get() = requireArguments().getString(EXTRA_PACKAGE_NAME)!!
@@ -80,11 +86,11 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
   private var productDisposable: Disposable? = null
   private var downloadDisposable: Disposable? = null
   private val downloadConnection = Connection(DownloadService::class.java, onBind = { _, binder ->
-    updateDownloadState(binder.getState(packageName))
-    downloadDisposable = binder.events(packageName).subscribe { updateDownloadState(it) }
-  }, onUnbind = { _, _ ->
-    downloadDisposable?.dispose()
-    downloadDisposable = null
+    lifecycleScope.launch {
+      binder.stateSubject.filter { it.packageName == packageName }.collect {
+        updateDownloadState(it)
+      }
+    }
   })
 
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -295,11 +301,14 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
     }
   }
 
-  private fun updateDownloadState(state: DownloadService.State?) {
+  private suspend fun updateDownloadState(state: DownloadService.State?) {
     val status = when (state) {
       is DownloadService.State.Pending -> ProductAdapter.Status.Pending
       is DownloadService.State.Connecting -> ProductAdapter.Status.Connecting
-      is DownloadService.State.Downloading -> ProductAdapter.Status.Downloading(state.read, state.total)
+      is DownloadService.State.Downloading -> ProductAdapter.Status.Downloading(
+        state.read,
+        state.total
+      )
       is DownloadService.State.Success, is DownloadService.State.Error, is DownloadService.State.Cancel, null -> null
     }
     val downloading = status != null
@@ -309,8 +318,9 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
     }
     (recyclerView?.adapter as? ProductAdapter)?.setStatus(status)
     if (state is DownloadService.State.Success && isResumed) {
-      state.consume()
-      screenActivity.startPackageInstaller(state.release.cacheFileName)
+      withContext(Dispatchers.Default) {
+        AppInstaller.getInstance(context)?.defaultInstaller?.install(state.release.cacheFileName)
+      }
     }
   }
 
@@ -330,7 +340,7 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
   override fun onActionClick(action: ProductAdapter.Action) {
     when (action) {
       ProductAdapter.Action.INSTALL,
-      ProductAdapter.Action.UPDATE -> {
+      ProductAdapter.Action.UPDATE, -> {
         val installedItem = installed?.installedItem
         val productRepository = Product.findSuggested(products, installedItem) { it.first }
         val compatibleReleases = productRepository?.first?.selectedReleases.orEmpty()
@@ -364,10 +374,10 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
           .setData(Uri.parse("package:$packageName")))
       }
       ProductAdapter.Action.UNINSTALL -> {
-        // TODO Handle deprecation
-        @Suppress("DEPRECATION")
-        startActivity(Intent(Intent.ACTION_UNINSTALL_PACKAGE)
-          .setData(Uri.parse("package:$packageName")))
+        lifecycleScope.launch {
+          AppInstaller.getInstance(context)?.defaultInstaller?.uninstall(packageName)
+        }
+        Unit
       }
       ProductAdapter.Action.CANCEL -> {
         val binder = downloadConnection.binder

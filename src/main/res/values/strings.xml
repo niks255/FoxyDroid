@@ -64,6 +64,7 @@
   <string name="incompatible_with_FORMAT">Incompatible with %s</string>
   <string name="install">Install</string>
   <string name="installed">Installed</string>
+  <string name="installed_toast">is installed.</string>
   <string name="integrity_check_error_DESC">Could not check integrity.</string>
   <string name="invalid_address">Invalid address</string>
   <string name="invalid_fingerprint_format">Invalid fingerprint format</string>

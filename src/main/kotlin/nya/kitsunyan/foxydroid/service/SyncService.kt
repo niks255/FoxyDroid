@@ -18,7 +18,10 @@ import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.PublishSubject
 import nya.kitsunyan.foxydroid.BuildConfig
-import nya.kitsunyan.foxydroid.Common
+import nya.kitsunyan.foxydroid.NOTIFICATION_CHANNEL_SYNCING
+import nya.kitsunyan.foxydroid.NOTIFICATION_CHANNEL_UPDATES
+import nya.kitsunyan.foxydroid.NOTIFICATION_ID_SYNCING
+import nya.kitsunyan.foxydroid.NOTIFICATION_ID_UPDATES
 import nya.kitsunyan.foxydroid.MainActivity
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.content.Preferences
@@ -104,7 +107,7 @@ class SyncService: ConnectionService<SyncService.Binder>() {
     fun setUpdateNotificationBlocker(fragment: Fragment?) {
       updateNotificationBlockerFragment = fragment?.let(::WeakReference)
       if (fragment != null) {
-        notificationManager.cancel(Common.NOTIFICATION_ID_UPDATES)
+        notificationManager.cancel(NOTIFICATION_ID_UPDATES)
       }
     }
 
@@ -146,11 +149,11 @@ class SyncService: ConnectionService<SyncService.Binder>() {
     super.onCreate()
 
     if (Android.sdk(26)) {
-      NotificationChannel(Common.NOTIFICATION_CHANNEL_SYNCING,
+      NotificationChannel(NOTIFICATION_CHANNEL_SYNCING,
         getString(R.string.syncing), NotificationManager.IMPORTANCE_LOW)
         .apply { setShowBadge(false) }
         .let(notificationManager::createNotificationChannel)
-      NotificationChannel(Common.NOTIFICATION_CHANNEL_UPDATES,
+      NotificationChannel(NOTIFICATION_CHANNEL_UPDATES,
         getString(R.string.updates), NotificationManager.IMPORTANCE_LOW)
         .let(notificationManager::createNotificationChannel)
     }
@@ -196,8 +199,8 @@ class SyncService: ConnectionService<SyncService.Binder>() {
   }
 
   private fun showNotificationError(repository: Repository, exception: Exception) {
-    notificationManager.notify("repository-${repository.id}", Common.NOTIFICATION_ID_SYNCING, NotificationCompat
-      .Builder(this, Common.NOTIFICATION_CHANNEL_SYNCING)
+    notificationManager.notify("repository-${repository.id}", NOTIFICATION_ID_SYNCING, NotificationCompat
+      .Builder(this, NOTIFICATION_CHANNEL_SYNCING)
       .setSmallIcon(android.R.drawable.stat_sys_warning)
       .setColor(ContextThemeWrapper(this, R.style.Theme_Main_Light)
         .getColorFromAttr(android.R.attr.colorAccent).defaultColor)
@@ -215,18 +218,23 @@ class SyncService: ConnectionService<SyncService.Binder>() {
   }
 
   private val stateNotificationBuilder by lazy { NotificationCompat
-    .Builder(this, Common.NOTIFICATION_CHANNEL_SYNCING)
+    .Builder(this, NOTIFICATION_CHANNEL_SYNCING)
     .setSmallIcon(R.drawable.ic_sync)
     .setColor(ContextThemeWrapper(this, R.style.Theme_Main_Light)
       .getColorFromAttr(android.R.attr.colorAccent).defaultColor)
     .addAction(0, getString(R.string.cancel), PendingIntent.getService(this, 0,
-      Intent(this, this::class.java).setAction(ACTION_CANCEL), PendingIntent.FLAG_UPDATE_CURRENT)) }
+      Intent(this, this::class.java).setAction(ACTION_CANCEL),
+      if (Android.sdk(23))
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+      else
+        PendingIntent.FLAG_UPDATE_CURRENT))
+  }
 
   private fun publishForegroundState(force: Boolean, state: State) {
     if (force || currentTask?.lastState != state) {
       currentTask = currentTask?.copy(lastState = state)
       if (started == Started.MANUAL) {
-        startForeground(Common.NOTIFICATION_ID_SYNCING, stateNotificationBuilder.apply {
+        startForeground(NOTIFICATION_ID_SYNCING, stateNotificationBuilder.apply {
           when (state) {
             is State.Connecting -> {
               setContentTitle(getString(R.string.syncing_FORMAT, state.name))
@@ -346,8 +354,8 @@ class SyncService: ConnectionService<SyncService.Binder>() {
   private fun displayUpdatesNotification(productItems: List<ProductItem>) {
     val maxUpdates = 5
     fun <T> T.applyHack(callback: T.() -> Unit): T = apply(callback)
-    notificationManager.notify(Common.NOTIFICATION_ID_UPDATES, NotificationCompat
-      .Builder(this, Common.NOTIFICATION_CHANNEL_UPDATES)
+    notificationManager.notify(NOTIFICATION_ID_UPDATES, NotificationCompat
+      .Builder(this, NOTIFICATION_CHANNEL_UPDATES)
       .setSmallIcon(R.drawable.ic_new_releases)
       .setContentTitle(getString(R.string.new_updates_available))
       .setContentText(resources.getQuantityString(R.plurals.new_updates_DESC_FORMAT,
@@ -355,7 +363,11 @@ class SyncService: ConnectionService<SyncService.Binder>() {
       .setColor(ContextThemeWrapper(this, R.style.Theme_Main_Light)
         .getColorFromAttr(android.R.attr.colorAccent).defaultColor)
       .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java)
-        .setAction(MainActivity.ACTION_UPDATES), PendingIntent.FLAG_UPDATE_CURRENT))
+        .setAction(MainActivity.ACTION_UPDATES),
+        if (Android.sdk(23))
+          PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        else
+          PendingIntent.FLAG_UPDATE_CURRENT))
       .setStyle(NotificationCompat.InboxStyle().applyHack {
         for (productItem in productItems.take(maxUpdates)) {
           val builder = SpannableStringBuilder(productItem.name)

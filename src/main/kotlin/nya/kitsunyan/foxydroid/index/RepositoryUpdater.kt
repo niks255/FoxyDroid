@@ -157,7 +157,7 @@ object RepositoryUpdater {
                 certificate: String, version: Int, timestamp: Long) {
                 changedRepository = repository.update(mirrors, name, description, version,
                   lastModified, entityTag, timestamp)
-                certificateFromIndex = certificate.toLowerCase(Locale.US)
+                certificateFromIndex = certificate.lowercase(Locale.US)
               }
 
               override fun onProduct(product: Product) {

@@ -1,6 +1,9 @@
 package nya.kitsunyan.foxydroid.utility
 
 import android.animation.ValueAnimator
+import android.app.ActivityManager
+import android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+import android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE
 import android.content.Context
 import android.content.pm.Signature
 import android.content.res.Configuration
@@ -9,6 +12,11 @@ import android.os.LocaleList
 import android.provider.Settings
 import nya.kitsunyan.foxydroid.BuildConfig
 import nya.kitsunyan.foxydroid.R
+import nya.kitsunyan.foxydroid.entity.InstalledItem
+import nya.kitsunyan.foxydroid.entity.Product
+import nya.kitsunyan.foxydroid.entity.Repository
+import nya.kitsunyan.foxydroid.service.Connection
+import nya.kitsunyan.foxydroid.service.DownloadService
 import nya.kitsunyan.foxydroid.utility.extension.android.*
 import nya.kitsunyan.foxydroid.utility.extension.resources.*
 import nya.kitsunyan.foxydroid.utility.extension.text.*
@@ -66,6 +74,32 @@ object Utils {
     }
   }
 
+  fun startUpdate(packageName: String, installedItem: InstalledItem?, products: List<Pair<Product, Repository>>,
+                  downloadConnection: Connection<DownloadService.Binder, DownloadService>
+  ) {
+    val productRepository = Product.findSuggested(products, installedItem) { it.first }
+    val compatibleReleases = productRepository?.first?.selectedReleases.orEmpty()
+      .filter { installedItem == null || installedItem.signature == it.signature }
+    val release = if (compatibleReleases.size >= 2) {
+      compatibleReleases
+        .filter { it.platforms.contains(Android.primaryPlatform) }
+        .minByOrNull { it.platforms.size }
+        ?: compatibleReleases.minByOrNull { it.platforms.size }
+        ?: compatibleReleases.firstOrNull()
+    } else {
+      compatibleReleases.firstOrNull()
+    }
+    val binder = downloadConnection.binder
+    if (productRepository != null && release != null && binder != null) {
+      binder.enqueue(
+        packageName,
+        productRepository.first.name,
+        productRepository.second,
+        release
+      )
+    } else Unit
+  }
+
   fun configureLocale(context: Context): Context {
     val supportedLanguages = BuildConfig.LANGUAGES.toSet()
     val configuration = context.resources.configuration
@@ -96,5 +130,15 @@ object Utils {
     } else {
       Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) != 0f
     }
+  }
+
+  /**
+   * Checks if app is currently considered to be in the foreground by Android.
+   */
+  fun inForeground(): Boolean {
+    val appProcessInfo = ActivityManager.RunningAppProcessInfo()
+    ActivityManager.getMyMemoryState(appProcessInfo)
+    val importance = appProcessInfo.importance
+    return ((importance == IMPORTANCE_FOREGROUND) or (importance == IMPORTANCE_VISIBLE))
   }
 }

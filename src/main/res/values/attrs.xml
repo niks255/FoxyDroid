@@ -2,5 +2,6 @@
 <resources>
 
   <attr name="colorError" format="color" />
+  <attr name="colorPrimary" format="color" />
 
 </resources>

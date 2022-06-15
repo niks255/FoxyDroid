@@ -88,6 +88,10 @@
     <receiver
       android:name=".service.DownloadService$Receiver" />
 
+    <service
+      android:name=".installer.InstallerService"
+      android:exported="false" />
+
     <provider
       android:name=".content.Cache$Provider"
       android:authorities="${applicationId}.provider.cache"

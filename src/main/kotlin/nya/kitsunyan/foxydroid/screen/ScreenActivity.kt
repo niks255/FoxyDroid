@@ -2,7 +2,7 @@ package nya.kitsunyan.foxydroid.screen
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import android.content.pm.PackageInstaller
 import android.os.Bundle
 import android.os.Parcel
 import android.view.View
@@ -12,15 +12,16 @@ import android.widget.FrameLayout
 import android.widget.Toolbar
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import nya.kitsunyan.foxydroid.R
-import nya.kitsunyan.foxydroid.content.Cache
 import nya.kitsunyan.foxydroid.content.Preferences
 import nya.kitsunyan.foxydroid.database.CursorOwner
+import nya.kitsunyan.foxydroid.installer.InstallerService
 import nya.kitsunyan.foxydroid.utility.KParcelable
 import nya.kitsunyan.foxydroid.utility.Utils
-import nya.kitsunyan.foxydroid.utility.extension.android.*
-import nya.kitsunyan.foxydroid.utility.extension.resources.*
-import nya.kitsunyan.foxydroid.utility.extension.text.*
+import nya.kitsunyan.foxydroid.utility.extension.resources.getDrawableFromAttr
+import nya.kitsunyan.foxydroid.utility.extension.text.nullIfEmpty
 
 abstract class ScreenActivity: FragmentActivity() {
   companion object {
@@ -29,7 +30,7 @@ abstract class ScreenActivity: FragmentActivity() {
 
   sealed class SpecialIntent {
     object Updates: SpecialIntent()
-    class Install(val packageName: String?, val cacheFileName: String?): SpecialIntent()
+    class Install(val packageName: String?, val status: Int?, val promptIntent: Intent?) : SpecialIntent()
   }
 
   private class FragmentStackItem(val className: String, val arguments: Bundle?,
@@ -67,6 +68,8 @@ abstract class ScreenActivity: FragmentActivity() {
   override fun attachBaseContext(base: Context) {
     super.attachBaseContext(Utils.configureLocale(base))
   }
+
+  //val defaultInstaller = AppInstaller.getInstance(this)?.defaultInstaller
 
   override fun onCreate(savedInstanceState: Bundle?) {
     setTheme(Preferences[Preferences.Key.Theme].getResId(resources.configuration))
@@ -203,12 +206,22 @@ abstract class ScreenActivity: FragmentActivity() {
       }
       is SpecialIntent.Install -> {
         val packageName = specialIntent.packageName
-        if (!packageName.isNullOrEmpty()) {
-          val fragment = currentFragment
-          if (fragment !is ProductFragment || fragment.packageName != packageName) {
-            pushFragment(ProductFragment(packageName))
+        val status = specialIntent.status
+        val promptIntent = specialIntent.promptIntent
+        if (!packageName.isNullOrEmpty() && status != null && promptIntent != null) {
+          lifecycleScope.launch {
+            startService(
+              Intent(baseContext, InstallerService::class.java)
+                .putExtra(PackageInstaller.EXTRA_STATUS, status)
+                .putExtra(
+                  PackageInstaller.EXTRA_PACKAGE_NAME,
+                  packageName
+                )
+                .putExtra(Intent.EXTRA_INTENT, promptIntent)
+            )
           }
-          specialIntent.cacheFileName?.let(::startPackageInstaller)
+        } else {
+          throw IllegalArgumentException("Missing parameters needed to relaunch InstallerService and trigger prompt.")
         }
         Unit
       }
@@ -227,18 +240,6 @@ abstract class ScreenActivity: FragmentActivity() {
         }
       }
     }
-  }
-
-  internal fun startPackageInstaller(cacheFileName: String) {
-    val (uri, flags) = if (Android.sdk(24)) {
-      Pair(Cache.getReleaseUri(this, cacheFileName), Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    } else {
-      Pair(Uri.fromFile(Cache.getReleaseFile(this, cacheFileName)), 0)
-    }
-    // TODO Handle deprecation
-    @Suppress("DEPRECATION")
-    startActivity(Intent(Intent.ACTION_INSTALL_PACKAGE)
-      .setDataAndType(uri, "application/vnd.android.package-archive").setFlags(flags))
   }
 
   internal fun navigateProduct(packageName: String) = pushFragment(ProductFragment(packageName))
