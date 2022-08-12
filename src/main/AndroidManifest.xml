@@ -17,6 +17,7 @@
     android:supportsRtl="true"
     android:allowBackup="false"
     android:theme="@style/Theme.Main.Light"
+    android:networkSecurityConfig="@xml/network_security_config"
     tools:ignore="GoogleAppIndexingWarning">
 
     <receiver
