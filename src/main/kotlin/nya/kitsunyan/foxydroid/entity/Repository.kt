@@ -109,12 +109,11 @@ data class Repository(val id: Long, val address: String, val mirrors: List<Strin
         "the APKs that are released in the Google Play Store.",
         21, true, "B7C2EEFD8DAC7806AF67DFCD92EB18126BC08312A7F2D6F3862E46013C7A6135", "")
     }, run {
-      defaultRepository(
-            "https://apt.izzysoft.de/fdroid/repo", "IzzyOnDroid F-Droid Repo", "This is a " +
-            "repository of apps to be used with F-Droid the original application developers, taken from the resp. " +
-            "repositories (mostly GitHub). At this moment I cannot give guarantees on regular updates for all of them, " +
-            "though most are checked multiple times a week ", 21, true,
-            "3BF0D6ABFEAE2F401707B6D966BE743BF0EEE49C2561B9BA39073711F628937A", "")
+      defaultRepository("https://apt.izzysoft.de/fdroid/repo", "IzzyOnDroid F-Droid Repo", "This is a " +
+        "repository of apps to be used with F-Droid the original application developers, taken from the resp. " +
+        "repositories (mostly GitHub). At this moment I cannot give guarantees on regular updates for all of them, " +
+        "though most are checked multiple times a week ",
+        21, true, "3BF0D6ABFEAE2F401707B6D966BE743BF0EEE49C2561B9BA39073711F628937A", "")
     }, run {
       defaultRepository("https://guardianproject.info/fdroid/archive", "Guardian Project Archive", "The official " +
         "repository of The Guardian Project apps for use with the F-Droid client. This contains older versions of " +
