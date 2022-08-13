@@ -29,7 +29,7 @@ android {
     //noinspection OldTargetApi
     targetSdkVersion 32
     versionCode 4
-    versionName '1.3.2'
+    versionName '1.3.2.1'
 
     def languages = [ 'en', 'ru' ]
     buildConfigField 'String[]', 'LANGUAGES', '{ "' + languages.join('", "') + '" }'
