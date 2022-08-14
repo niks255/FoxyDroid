@@ -23,13 +23,13 @@ android {
   buildToolsVersion '32.0.0'
 
   defaultConfig {
-    archivesBaseName = 'foxy-droid'
     applicationId 'nya.kitsunyan.foxydroid'
     minSdkVersion 21
     //noinspection OldTargetApi
     targetSdkVersion 32
     versionCode 4
-    versionName '1.3.2.1'
+    versionName '1.3.2.2'
+    archivesBaseName = "FoxyDroid-v$versionName"
 
     def languages = [ 'en', 'ru' ]
     buildConfigField 'String[]', 'LANGUAGES', '{ "' + languages.join('", "') + '" }'

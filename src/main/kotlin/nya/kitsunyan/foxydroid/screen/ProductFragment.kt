@@ -64,7 +64,8 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
     UPDATE(2, ProductAdapter.Action.UPDATE, R.drawable.ic_archive),
     LAUNCH(3, ProductAdapter.Action.LAUNCH, R.drawable.ic_launch),
     DETAILS(4, ProductAdapter.Action.DETAILS, R.drawable.ic_tune),
-    UNINSTALL(5, ProductAdapter.Action.UNINSTALL, R.drawable.ic_delete)
+    UNINSTALL(5, ProductAdapter.Action.UNINSTALL, R.drawable.ic_delete),
+    SHARE(6, ProductAdapter.Action.SHARE, R.drawable.ic_share)
   }
 
   private class Installed(val installedItem: InstalledItem, val isSystem: Boolean,
@@ -244,6 +245,7 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
       !preference.shouldIgnoreUpdate(product.versionCode)
     val canUninstall = product != null && installed != null && !installed.isSystem
     val canLaunch = product != null && installed != null && installed.launcherActivities.isNotEmpty()
+    val canShare = product != null && (products[0].second.name == "F-Droid")
 
     val actions = mutableSetOf<Action>()
     if (canInstall) {
@@ -261,6 +263,9 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
     if (canUninstall) {
       actions += Action.UNINSTALL
     }
+    if (canShare) {
+      actions += Action.SHARE
+    }
     val primaryAction = when {
       canUpdate -> Action.UPDATE
       canLaunch -> Action.LAUNCH
@@ -274,7 +279,12 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
 
     val toolbar = toolbar
     if (toolbar != null) {
-      for (action in sequenceOf(Action.INSTALL, Action.UPDATE, Action.UNINSTALL)) {
+      for (action in sequenceOf(
+        Action.INSTALL,
+        Action.SHARE,
+        Action.UPDATE,
+        Action.UNINSTALL
+      )) {
         toolbar.menu.findItem(action.id).isEnabled = !downloading
       }
     }
@@ -385,6 +395,20 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
           binder.cancel(packageName)
         }
         Unit
+      }
+      ProductAdapter.Action.SHARE -> {
+        val sendIntent: Intent = Intent().apply {
+          this.action = Intent.ACTION_SEND
+
+          putExtra(
+            Intent.EXTRA_TEXT,
+            "https://www.f-droid.org/en/packages/${products[0].first.packageName}/"
+          )
+          type = "text/plain"
+        }
+
+        val shareIntent = Intent.createChooser(sendIntent, null)
+        startActivity(shareIntent)
       }
     }::class
   }

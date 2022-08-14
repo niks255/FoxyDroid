@@ -164,5 +164,6 @@
   <string name="waiting_to_start_download">Ожидание начала загрузки</string>
   <string name="website">Веб-сайт</string>
   <string name="ok">OK</string>
+    <string name="share">Поделиться</string>
 
 </resources>
