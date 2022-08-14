@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller.SessionParams
+import android.os.Build
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -25,7 +26,7 @@ class DefaultInstaller(context: Context) : BaseInstaller(context) {
     }
 
     init {
-        if (Android.sdk(31)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             sessionParams.setRequireUserAction(SessionParams.USER_ACTION_NOT_REQUIRED)
         }
     }
