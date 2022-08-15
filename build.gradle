@@ -18,17 +18,47 @@ buildscript {
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
+def getVersionCode() {
+  def propertiesFile = file('version.properties')
+
+  if (!propertiesFile.canRead()) {
+    throw new GradleException("Could not read " + propertiesFile.name)
+  }
+
+  Properties properties = new Properties()
+  properties.load(new FileInputStream(propertiesFile))
+
+  def code = properties['VERSION_CODE'].toInteger()
+
+  gradle.taskGraph.whenReady { tasksGraph ->
+    List<Task> tasks = tasksGraph.getAllTasks()
+
+    for (Task task : tasks) {
+      if (task.name.contains("Release")) {
+        code = code + 1
+        properties['VERSION_CODE'] = code.toString()
+        properties.store(propertiesFile.newWriter(), null)
+        break
+      }
+    }
+  }
+
+  return code
+}
+
 android {
   compileSdkVersion 32
   buildToolsVersion '32.0.0'
+
+  def code = getVersionCode()
 
   defaultConfig {
     applicationId 'nya.kitsunyan.foxydroid'
     minSdkVersion 21
     //noinspection OldTargetApi
     targetSdkVersion 32
-    versionCode 4
-    versionName '1.3.2.3'
+    versionCode code
+    versionName "1.3.$code"
     archivesBaseName = "FoxyDroid-v$versionName"
 
     def languages = [ 'en', 'ru' ]
