@@ -50,13 +50,10 @@ object RepositoryUpdater {
     }
   }
 
-  private lateinit var context: Context
   private val updaterLock = Any()
   private val cleanupLock = Any()
 
-  fun init(context: Context) {
-    this.context = context
-
+  fun init() {
     var lastDisabled = setOf<Long>()
     Observable.just(Unit)
       .concatWith(Database.observable(Database.Subject.Repositories))
@@ -79,15 +76,15 @@ object RepositoryUpdater {
     synchronized(updaterLock) { }
   }
 
-  fun update(repository: Repository, unstable: Boolean,
+  fun update(context: Context, repository: Repository, unstable: Boolean,
     callback: (Stage, Long, Long?) -> Unit): Single<Boolean> {
-    return update(repository, listOf(IndexType.INDEX_V1, IndexType.INDEX), unstable, callback)
+    return update(context, repository, listOf(IndexType.INDEX_V1, IndexType.INDEX), unstable, callback)
   }
 
-  private fun update(repository: Repository, indexTypes: List<IndexType>, unstable: Boolean,
+  private fun update(context: Context, repository: Repository, indexTypes: List<IndexType>, unstable: Boolean,
     callback: (Stage, Long, Long?) -> Unit): Single<Boolean> {
     val indexType = indexTypes[0]
-    return downloadIndex(repository, indexType, callback)
+    return downloadIndex(context, repository, indexType, callback)
       .flatMap { (result, file) ->
         when {
           result.isNotChanged -> {
@@ -97,20 +94,20 @@ object RepositoryUpdater {
           !result.success -> {
             file.delete()
             if (result.code == 404 && indexTypes.isNotEmpty()) {
-              update(repository, indexTypes.subList(1, indexTypes.size), unstable, callback)
+              update(context, repository, indexTypes.subList(1, indexTypes.size), unstable, callback)
             } else {
               Single.error(UpdateException(ErrorType.HTTP, "Invalid response: HTTP ${result.code}"))
             }
           }
           else -> {
-            RxUtils.managedSingle { processFile(repository, indexType, unstable,
+            RxUtils.managedSingle { processFile(context, repository, indexType, unstable,
               file, result.lastModified, result.entityTag, callback) }
           }
         }
       }
   }
 
-  private fun downloadIndex(repository: Repository, indexType: IndexType,
+  private fun downloadIndex(context: Context, repository: Repository, indexType: IndexType,
     callback: (Stage, Long, Long?) -> Unit): Single<Pair<Downloader.Result, File>> {
     return Single.just(Unit)
       .map { Cache.getTemporaryFile(context) }
@@ -130,7 +127,7 @@ object RepositoryUpdater {
         } }
   }
 
-  private fun processFile(repository: Repository, indexType: IndexType, unstable: Boolean,
+  private fun processFile(context: Context, repository: Repository, indexType: IndexType, unstable: Boolean,
     file: File, lastModified: String, entityTag: String, callback: (Stage, Long, Long?) -> Unit): Boolean {
     var rollback = true
     return synchronized(updaterLock) {

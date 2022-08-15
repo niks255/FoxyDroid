@@ -302,7 +302,7 @@ class SyncService: ConnectionService<SyncService.Binder>() {
           val unstable = Preferences[Preferences.Key.UpdateUnstable]
           lateinit var disposable: Disposable
           disposable = RepositoryUpdater
-            .update(repository, unstable) { stage, progress, total ->
+            .update(this@SyncService,repository, unstable) { stage, progress, total ->
               if (!disposable.isDisposed) {
                 stateSubject.onNext(State.Syncing(repository.name, stage, progress, total))
               }
