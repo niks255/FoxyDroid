@@ -26,7 +26,7 @@ class DefaultInstaller(context: Context) : BaseInstaller(context) {
     }
 
     init {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (Android.sdk(31)) {
             sessionParams.setRequireUserAction(SessionParams.USER_ACTION_NOT_REQUIRED)
         }
     }

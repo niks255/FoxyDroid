@@ -282,7 +282,6 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
     if (toolbar != null) {
       for (action in sequenceOf(
         Action.INSTALL,
-        Action.SHARE,
         Action.UPDATE,
         Action.UNINSTALL
       )) {
@@ -403,10 +402,10 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
 
 
 
-          var baseShareUrl = if (products[0].second.name.startsWith("IzzyOnDroid", true))
-                "https://apt.izzysoft.de/fdroid/index/apk"
-              else
-                "https://www.f-droid.org/en/packages"
+          val baseShareUrl = if (products[0].second.name.startsWith("IzzyOnDroid", true))
+                                 "https://apt.izzysoft.de/fdroid/index/apk"
+                             else
+                                 "https://www.f-droid.org/en/packages"
 
           putExtra(
             Intent.EXTRA_TEXT,
