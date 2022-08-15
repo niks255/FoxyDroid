@@ -110,7 +110,6 @@ class DefaultInstaller(context: Context) : BaseInstaller(context) {
         }
         if (!hasErrors) {
             session.commit(PendingIntent.getService(context, id, intent, flags).intentSender)
-            cacheFile.delete()
         }
     }
 
