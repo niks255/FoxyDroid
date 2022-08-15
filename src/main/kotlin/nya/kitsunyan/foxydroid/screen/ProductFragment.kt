@@ -245,7 +245,8 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
       !preference.shouldIgnoreUpdate(product.versionCode)
     val canUninstall = product != null && installed != null && !installed.isSystem
     val canLaunch = product != null && installed != null && installed.launcherActivities.isNotEmpty()
-    val canShare = product != null && (products[0].second.name == "F-Droid")
+    val canShare = product != null && (products[0].second.name == "F-Droid" ||
+                                       products[0].second.name.startsWith("IzzyOnDroid", true))
 
     val actions = mutableSetOf<Action>()
     if (canInstall) {
@@ -400,9 +401,16 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
         val sendIntent: Intent = Intent().apply {
           this.action = Intent.ACTION_SEND
 
+
+
+          var baseShareUrl = if (products[0].second.name.startsWith("IzzyOnDroid", true))
+                "https://apt.izzysoft.de/fdroid/index/apk"
+              else
+                "https://www.f-droid.org/en/packages"
+
           putExtra(
             Intent.EXTRA_TEXT,
-            "https://www.f-droid.org/en/packages/${products[0].first.packageName}/"
+            "${baseShareUrl}/${products[0].first.packageName}/"
           )
           type = "text/plain"
         }

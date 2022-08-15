@@ -182,7 +182,8 @@ abstract class ScreenActivity: FragmentActivity() {
         }
         uri != null && uri.scheme in setOf("http", "https") -> {
           val host = uri.host.orEmpty()
-          if (host == "f-droid.org" || host.endsWith(".f-droid.org")) {
+          if (host == "f-droid.org" || host == "apt.izzysoft.de" ||
+              host.endsWith(".f-droid.org")) {
             uri.lastPathSegment?.nullIfEmpty()
           } else {
             null
