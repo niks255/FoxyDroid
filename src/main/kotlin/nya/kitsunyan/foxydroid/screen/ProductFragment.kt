@@ -400,12 +400,11 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
         val sendIntent: Intent = Intent().apply {
           this.action = Intent.ACTION_SEND
 
-
-
-          val baseShareUrl = if (products[0].second.name.startsWith("IzzyOnDroid", true))
-                                 "https://apt.izzysoft.de/fdroid/index/apk"
-                             else
-                                 "https://www.f-droid.org/en/packages"
+          val baseShareUrl = if (products.any{ it.second.name == "F-Droid" }) {
+                                    "https://www.f-droid.org/en/packages"
+                                 } else {
+                                    "https://apt.izzysoft.de/fdroid/index/apk"
+                                 }
 
           putExtra(
             Intent.EXTRA_TEXT,
