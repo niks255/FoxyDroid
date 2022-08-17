@@ -9,6 +9,7 @@ import android.content.Intent
 import android.net.Uri
 import android.view.ContextThemeWrapper
 import androidx.core.app.NotificationCompat
+import androidx.core.app.TaskStackBuilder
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.Disposable
 import kotlinx.coroutines.CoroutineScope
@@ -29,7 +30,6 @@ import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.content.Cache
 import nya.kitsunyan.foxydroid.entity.Release
 import nya.kitsunyan.foxydroid.entity.Repository
-import nya.kitsunyan.foxydroid.installer.AppInstaller
 import nya.kitsunyan.foxydroid.network.Downloader
 import nya.kitsunyan.foxydroid.utility.Utils
 import nya.kitsunyan.foxydroid.utility.extension.android.*
@@ -210,6 +210,36 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
     class Validation(val validateError: ValidationError) : ErrorType()
   }
 
+  private fun showNotificationInstall(task: Task) {
+    val intent = Intent(this, MainActivity::class.java)
+      .setAction(MainActivity.ACTION_INSTALL)
+      .setData(Uri.parse("package:$task.packageName"))
+      .putExtra(EXTRA_CACHE_FILE_NAME, task.release.cacheFileName)
+      .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val resultPendingIntent: PendingIntent? = TaskStackBuilder.create(this).run {
+      addNextIntentWithParentStack(intent)
+      getPendingIntent(
+        0,
+        if (Android.sdk(31)) PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        else PendingIntent.FLAG_UPDATE_CURRENT
+      )
+    }
+    notificationManager.notify(
+      task.notificationTag, NOTIFICATION_ID_DOWNLOADING, NotificationCompat
+        .Builder(this, NOTIFICATION_CHANNEL_DOWNLOADING)
+        .setAutoCancel(true)
+        .setSmallIcon(android.R.drawable.stat_sys_download_done)
+        .setColor(
+          ContextThemeWrapper(this, R.style.Theme_Main_Light)
+            .getColorFromAttr(R.attr.colorPrimary).defaultColor
+        )
+        .setContentIntent(resultPendingIntent)
+        .setContentTitle(getString(R.string.downloaded_FORMAT, task.name))
+        .setContentText(getString(R.string.tap_to_install_DESC))
+        .build()
+    )
+  }
+
   private fun showNotificationError(task: Task, errorType: ErrorType) {
     notificationManager.notify(task.notificationTag,
       NOTIFICATION_ID_DOWNLOADING,
@@ -286,10 +316,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
       consumed = true
     }
     if (!consumed) {
-      scope.launch {
-        AppInstaller.getInstance(this@DownloadService)
-          ?.defaultInstaller?.install(task.name, task.release.cacheFileName)
-      }
+       showNotificationInstall(task)
     }
   }
 

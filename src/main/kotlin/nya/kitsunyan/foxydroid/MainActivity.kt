@@ -18,8 +18,7 @@ class MainActivity: ScreenActivity() {
       ACTION_INSTALL -> handleSpecialIntent(
         SpecialIntent.Install(
           intent.packageName,
-          intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1),
-          intent.getParcelableExtra(Intent.EXTRA_INTENT)
+          intent.getStringExtra(EXTRA_CACHE_FILE_NAME)
         )
       )
       else -> super.handleIntent(intent)

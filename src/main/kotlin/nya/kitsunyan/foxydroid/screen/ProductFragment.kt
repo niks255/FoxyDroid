@@ -23,6 +23,7 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
@@ -352,21 +353,13 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
       ProductAdapter.Action.INSTALL,
       ProductAdapter.Action.UPDATE, -> {
         val installedItem = installed?.installedItem
-        val productRepository = Product.findSuggested(products, installedItem) { it.first }
-        val compatibleReleases = productRepository?.first?.selectedReleases.orEmpty()
-          .filter { installedItem == null || installedItem.signature == it.signature }
-        val release = if (compatibleReleases.size >= 2) {
-          compatibleReleases
-            .filter { it.platforms.contains(Android.primaryPlatform) }
-            .minBy { it.platforms.size }
-            ?: compatibleReleases.minBy { it.platforms.size }
-            ?: compatibleReleases.firstOrNull()
-        } else {
-          compatibleReleases.firstOrNull()
-        }
-        val binder = downloadConnection.binder
-        if (productRepository != null && release != null && binder != null) {
-          binder.enqueue(packageName, productRepository.first.name, productRepository.second, release)
+        lifecycleScope.launch {
+          Utils.startUpdate(
+            packageName,
+            installedItem,
+            products,
+            downloadConnection
+          )
         }
         Unit
       }

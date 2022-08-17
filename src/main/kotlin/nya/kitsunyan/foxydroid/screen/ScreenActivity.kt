@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.content.Preferences
 import nya.kitsunyan.foxydroid.database.CursorOwner
+import nya.kitsunyan.foxydroid.installer.AppInstaller
 import nya.kitsunyan.foxydroid.installer.InstallerService
 import nya.kitsunyan.foxydroid.utility.KParcelable
 import nya.kitsunyan.foxydroid.utility.Utils
@@ -30,7 +31,7 @@ abstract class ScreenActivity: FragmentActivity() {
 
   sealed class SpecialIntent {
     object Updates: SpecialIntent()
-    class Install(val packageName: String?, val status: Int?, val promptIntent: Intent?) : SpecialIntent()
+    class Install(val packageName: String?, val cacheFileName: String?) : SpecialIntent()
   }
 
   private class FragmentStackItem(val className: String, val arguments: Bundle?,
@@ -207,22 +208,13 @@ abstract class ScreenActivity: FragmentActivity() {
       }
       is SpecialIntent.Install -> {
         val packageName = specialIntent.packageName
-        val status = specialIntent.status
-        val promptIntent = specialIntent.promptIntent
-        if (!packageName.isNullOrEmpty() && status != null && promptIntent != null) {
+        if (!packageName.isNullOrEmpty()) {
           lifecycleScope.launch {
-            startService(
-              Intent(baseContext, InstallerService::class.java)
-                .putExtra(PackageInstaller.EXTRA_STATUS, status)
-                .putExtra(
-                  PackageInstaller.EXTRA_PACKAGE_NAME,
-                  packageName
-                )
-                .putExtra(Intent.EXTRA_INTENT, promptIntent)
-            )
+            specialIntent.cacheFileName?.let {
+              AppInstaller.getInstance(this@ScreenActivity)
+                ?.defaultInstaller?.install(packageName, it)
+            }
           }
-        } else {
-          throw IllegalArgumentException("Missing parameters needed to relaunch InstallerService and trigger prompt.")
         }
         Unit
       }
