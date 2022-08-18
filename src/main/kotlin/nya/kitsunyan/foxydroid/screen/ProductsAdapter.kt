@@ -116,7 +116,7 @@ class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
     }
   }
 
-  private fun getProductItem(position: Int): ProductItem {
+  fun getProductItem(position: Int): ProductItem {
     return Database.ProductAdapter.transformItem(moveTo(position))
   }
 

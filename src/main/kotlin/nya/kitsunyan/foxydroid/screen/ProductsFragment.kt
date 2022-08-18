@@ -6,17 +6,22 @@ import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.LinearLayoutManager
+import android.widget.Button
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.launch
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.database.CursorOwner
 import nya.kitsunyan.foxydroid.database.Database
 import nya.kitsunyan.foxydroid.entity.ProductItem
+import nya.kitsunyan.foxydroid.service.Connection
+import nya.kitsunyan.foxydroid.service.DownloadService
 import nya.kitsunyan.foxydroid.utility.RxUtils
+import nya.kitsunyan.foxydroid.utility.Utils
 import nya.kitsunyan.foxydroid.widget.DividerItemDecoration
 import nya.kitsunyan.foxydroid.widget.RecyclerFastScroller
 
@@ -48,16 +53,14 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
   private var searchQuery = ""
   private var section: ProductItem.Section = ProductItem.Section.All
   private var order = ProductItem.Order.NAME
-
   private var currentSearchQuery = ""
   private var currentSection: ProductItem.Section = ProductItem.Section.All
   private var currentOrder = ProductItem.Order.NAME
   private var layoutManagerState: Parcelable? = null
-
   private var recyclerView: RecyclerView? = null
-
+  private var updateAllButton: Button? = null
   private var repositoriesDisposable: Disposable? = null
-
+  private val downloadConnection = Connection(DownloadService::class.java)
   private val request: CursorOwner.Request
     get() {
       val searchQuery = searchQuery
@@ -71,19 +74,25 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
     }
 
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-    return RecyclerView(requireContext()).apply {
-      id = android.R.id.list
-      layoutManager = LinearLayoutManager(context)
-      isMotionEventSplittingEnabled = false
-      isVerticalScrollBarEnabled = false
-      setHasFixedSize(true)
-      recycledViewPool.setMaxRecycledViews(ProductsAdapter.ViewType.PRODUCT.ordinal, 30)
-      val adapter = ProductsAdapter { screenActivity.navigateProduct(it.packageName) }
-      this.adapter = adapter
-      addItemDecoration(DividerItemDecoration(context, adapter::configureDivider))
-      RecyclerFastScroller(this)
-      recyclerView = this
-    }
+    downloadConnection.bind(requireContext())
+
+    val layout = inflater.inflate(R.layout.products, container, false)
+    val recyclerView: RecyclerView = layout.findViewById(R.id.products_recycler_view)
+    val updateAllButton: Button = layout.findViewById(R.id.update_all)
+
+    recyclerView.setHasFixedSize(true)
+    recyclerView.isVerticalScrollBarEnabled = false
+    recyclerView.recycledViewPool.setMaxRecycledViews(ProductsAdapter.ViewType.PRODUCT.ordinal, 30)
+    val adapter = ProductsAdapter { screenActivity.navigateProduct(it.packageName) }
+    recyclerView.adapter = adapter
+    recyclerView.addItemDecoration(DividerItemDecoration(recyclerView.context, adapter::configureDivider))
+    RecyclerFastScroller(recyclerView)
+
+    updateAllButton.setOnClickListener { updateAll() }
+
+    this.recyclerView = recyclerView
+    this.updateAllButton = updateAllButton
+    return layout
   }
 
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -109,6 +118,9 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
     super.onDestroyView()
 
     recyclerView = null
+
+    updateAllButton = null
+    downloadConnection.unbind(requireContext())
 
     screenActivity.cursorOwner.detach(this)
     repositoriesDisposable?.dispose()
@@ -136,6 +148,12 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
           Source.INSTALLED -> getString(R.string.no_applications_installed)
           Source.UPDATES -> getString(R.string.all_applications_up_to_date)
         }
+      }
+      if (source == Source.UPDATES && itemCount > 0 &&
+          getItemEnumViewType(0) == ProductsAdapter.ViewType.PRODUCT) {
+        updateAllButton?.visibility = View.VISIBLE
+      } else {
+        updateAllButton?.visibility = View.GONE
       }
     }
 
@@ -175,6 +193,65 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
       this.order = order
       if (view != null) {
         screenActivity.cursorOwner.attach(this, request)
+      }
+    }
+  }
+
+  private fun updateAll() {
+    lifecycleScope.launch {
+      val adapter = recyclerView?.adapter as ProductsAdapter
+      for (i in 0 until adapter.itemCount) {
+        val product = adapter.getProductItem(i)
+        Observable.just(Unit)
+          .concatWith(Database.observable(Database.Subject.Products))
+          .observeOn(Schedulers.io())
+          .flatMapSingle {
+            RxUtils.querySingle {
+              Database.ProductAdapter.get(
+                product.packageName,
+                it
+              )
+            }
+          }
+          .flatMapSingle { products ->
+            RxUtils
+              .querySingle { Database.RepositoryAdapter.getAll(it) }
+              .map { it ->
+                it.asSequence().map { Pair(it.id, it) }.toMap()
+                  .let {
+                    products.mapNotNull { product ->
+                      it[product.repositoryId]?.let {
+                        Pair(
+                          product,
+                          it
+                        )
+                      }
+                    }
+                  }
+              }
+          }
+          .flatMapSingle { products ->
+            RxUtils
+              .querySingle {
+                ProductFragment.Nullable(
+                  Database.InstalledAdapter.get(product.packageName, it)
+                )
+              }
+              .map { Pair(products, it) }
+          }
+          .observeOn(AndroidSchedulers.mainThread())
+          .subscribe {
+            val (products, installedItem) = it
+            lifecycleScope.launch {
+              Utils.startUpdate(
+                product.packageName,
+                Database.InstalledAdapter.get(product.packageName, null),
+                products,
+                downloadConnection
+              )
+            }
+            Unit
+          }
       }
     }
   }

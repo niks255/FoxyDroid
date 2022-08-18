@@ -58,7 +58,7 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
     }
   }
 
-  private class Nullable<T>(val value: T?)
+  class Nullable<T>(val value: T?)
 
   private enum class Action(val id: Int, val adapterAction: ProductAdapter.Action, val iconResId: Int,) {
     INSTALL(1, ProductAdapter.Action.INSTALL, R.drawable.ic_archive),

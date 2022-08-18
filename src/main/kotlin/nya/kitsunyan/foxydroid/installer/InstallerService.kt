@@ -86,9 +86,7 @@ class InstallerService : Service() {
         val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
         val installerAction = intent.getStringExtra(KEY_ACTION)
 
-        // get application name for notifications
-        val appLabel = session?.appLabel ?: intent.getStringExtra(KEY_APP_NAME)
-            ?: try {
+        val appLabel = try {
                 if (name != null) packageManager.getApplicationLabel(
                     packageManager.getApplicationInfo(
                         name,

@@ -70,8 +70,6 @@ abstract class ScreenActivity: FragmentActivity() {
     super.attachBaseContext(Utils.configureLocale(base))
   }
 
-  //val defaultInstaller = AppInstaller.getInstance(this)?.defaultInstaller
-
   override fun onCreate(savedInstanceState: Bundle?) {
     setTheme(Preferences[Preferences.Key.Theme].getResId(resources.configuration))
     super.onCreate(savedInstanceState)
