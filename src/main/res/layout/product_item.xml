@@ -60,6 +60,14 @@
       android:textSize="14sp"
       android:singleLine="true" />
 
+    <ProgressBar
+        android:id="@+id/download_progress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginBottom="2dp"
+        android:visibility="gone"
+        style="@android:style/Widget.Material.ProgressBar.Horizontal" />
   </LinearLayout>
 
 </LinearLayout>

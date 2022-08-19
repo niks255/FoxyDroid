@@ -13,11 +13,14 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.database.CursorOwner
 import nya.kitsunyan.foxydroid.database.Database
 import nya.kitsunyan.foxydroid.entity.ProductItem
+import nya.kitsunyan.foxydroid.installer.AppInstaller
 import nya.kitsunyan.foxydroid.service.Connection
 import nya.kitsunyan.foxydroid.service.DownloadService
 import nya.kitsunyan.foxydroid.utility.RxUtils
@@ -56,11 +59,18 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
   private var currentSearchQuery = ""
   private var currentSection: ProductItem.Section = ProductItem.Section.All
   private var currentOrder = ProductItem.Order.NAME
+  private var downloading = false
   private var layoutManagerState: Parcelable? = null
   private var recyclerView: RecyclerView? = null
   private var updateAllButton: Button? = null
   private var repositoriesDisposable: Disposable? = null
-  private val downloadConnection = Connection(DownloadService::class.java)
+  private val downloadConnection = Connection(DownloadService::class.java, onBind = { _, binder ->
+    lifecycleScope.launch {
+      binder.stateSubject.collect {
+        updateDownloadState(it)
+      }
+    }
+  })
   private val request: CursorOwner.Request
     get() {
       val searchQuery = searchQuery
@@ -72,6 +82,40 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
         Source.UPDATES -> CursorOwner.Request.ProductsUpdates(searchQuery, section, order)
       }
     }
+
+  private suspend fun updateDownloadState(state: DownloadService.State?) {
+    val status = when (state) {
+      is DownloadService.State.Pending -> ProductAdapter.Status.Pending
+      is DownloadService.State.Connecting -> ProductAdapter.Status.Connecting
+      is DownloadService.State.Downloading -> ProductAdapter.Status.Downloading(
+        state.read,
+        state.total
+      )
+      is DownloadService.State.Success, is DownloadService.State.Error, is DownloadService.State.Cancel, null -> null
+    }
+    val downloading = status != null
+    if (this.downloading != downloading) {
+      this.downloading = downloading
+    }
+
+    val adapter = recyclerView?.adapter as ProductsAdapter
+    if (source == Source.UPDATES) {
+      for (i in 0 until adapter.itemCount) {
+        if (state?.packageName == adapter.getProductItem(i).packageName) {
+          adapter.setStatus(status, i)
+          break
+        }
+      }
+    } else {
+      adapter.setStatus()
+    }
+
+    if (state is DownloadService.State.Success && isResumed) {
+      withContext(Dispatchers.Default) {
+        AppInstaller.getInstance(context)?.defaultInstaller?.install(state.release.cacheFileName)
+      }
+    }
+  }
 
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
     downloadConnection.bind(requireContext())

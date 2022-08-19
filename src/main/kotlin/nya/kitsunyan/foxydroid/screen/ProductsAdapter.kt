@@ -21,6 +21,7 @@ import nya.kitsunyan.foxydroid.utility.extension.resources.*
 import nya.kitsunyan.foxydroid.utility.extension.text.*
 import nya.kitsunyan.foxydroid.widget.CursorRecyclerAdapter
 import nya.kitsunyan.foxydroid.widget.DividerItemDecoration
+import kotlin.math.roundToInt
 
 class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
   CursorRecyclerAdapter<ProductsAdapter.ViewType, RecyclerView.ViewHolder>() {
@@ -31,7 +32,7 @@ class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
     val status = itemView.findViewById<TextView>(R.id.status)!!
     val summary = itemView.findViewById<TextView>(R.id.summary)!!
     val icon = itemView.findViewById<ImageView>(R.id.icon)!!
-
+    val downloadProgress: ProgressBar = itemView.findViewById(R.id.download_progress)
     val progressIcon: Drawable
     val defaultIcon: Drawable
 
@@ -67,6 +68,13 @@ class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
       itemView.layoutParams = RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT,
         RecyclerView.LayoutParams.MATCH_PARENT)
     }
+  }
+
+  private var status: ProductAdapter.Status? = null
+
+  fun setStatus(status: ProductAdapter.Status? = null, index: Int? = null) {
+    this.status = status
+    index?.let { notifyItemChanged(it) }
   }
 
   fun configureDivider(context: Context, position: Int, configuration: DividerItemDecoration.Configuration) {
@@ -168,6 +176,27 @@ class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
               background = null
             }
           }
+        }
+        val status = this.status
+        if (status != null) {
+          when (status) {
+            is ProductAdapter.Status.Pending -> {
+              holder.downloadProgress.visibility = View.GONE
+            }
+            is ProductAdapter.Status.Connecting -> {
+              holder.downloadProgress.visibility = View.GONE
+            }
+            is ProductAdapter.Status.Downloading -> {
+              holder.downloadProgress.visibility = View.VISIBLE
+              holder.downloadProgress.isIndeterminate = status.total == null
+              if (status.total != null) {
+                  holder.downloadProgress.progress = (holder.downloadProgress.max.toFloat() * status.read / status.total).roundToInt()
+              }
+              Unit
+            }
+          }
+        } else {
+          holder.downloadProgress.visibility = View.GONE
         }
         val enabled = productItem.compatible || productItem.installedVersion.isNotEmpty()
         sequenceOf(holder.name, holder.status, holder.summary).forEach { it.isEnabled = enabled }
