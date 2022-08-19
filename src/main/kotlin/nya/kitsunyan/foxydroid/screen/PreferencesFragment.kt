@@ -80,6 +80,7 @@ class PreferencesFragment: ScreenFragment() {
           is Preferences.Theme.System -> getString(R.string.system)
           is Preferences.Theme.Light -> getString(R.string.light)
           is Preferences.Theme.Dark -> getString(R.string.dark)
+          is Preferences.Theme.Black -> getString(R.string.black)
         }
       }
       addSwitch(Preferences.Key.IncompatibleVersions, getString(R.string.incompatible_versions),

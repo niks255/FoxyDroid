@@ -168,5 +168,6 @@
     <string name="clear_cache">Очистить кэш</string>
   <string name="clear_cache_toast">Кэш очищен</string>
     <string name="update_all">Обновить все</string>
+    <string name="black">Чёрная</string>
 
 </resources>

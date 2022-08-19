@@ -16,6 +16,7 @@
   <string name="author_website">Author website</string>
   <string name="available">Available</string>
   <string name="bug_tracker">Bug tracker</string>
+  <string name="black">Black</string>
   <string name="cancel">Cancel</string>
   <string name="cant_edit_sync_DESC">Cannot edit repository since it is syncing right now.</string>
   <string name="changelog">Changelog</string>

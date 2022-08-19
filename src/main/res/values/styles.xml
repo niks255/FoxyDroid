@@ -28,6 +28,10 @@
     <item name="colorError">@color/error_dark</item>
   </style>
 
+  <style name="Theme.Main.Black" parent="Theme.Main.Dark">
+    <item name="android:colorBackground">@color/background_black</item>
+  </style>
+
   <style name="Widget.Main.Toolbar" parent="@android:style/Widget.Material.Toolbar">
     <!-- Fixes invalid text style on Samsung devices -->
     <item name="android:titleTextAppearance">@android:style/TextAppearance.Material.Widget.Toolbar.Title</item>
