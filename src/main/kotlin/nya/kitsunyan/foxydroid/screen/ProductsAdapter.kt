@@ -72,9 +72,9 @@ class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
 
   private var status: ProductAdapter.Status? = null
 
-  fun setStatus(status: ProductAdapter.Status? = null, index: Int? = null) {
+  fun setStatus(status: ProductAdapter.Status? = null, index: Int) {
     this.status = status
-    index?.let { notifyItemChanged(it) }
+    notifyItemChanged(index)
   }
 
   fun configureDivider(context: Context, position: Int, configuration: DividerItemDecoration.Configuration) {

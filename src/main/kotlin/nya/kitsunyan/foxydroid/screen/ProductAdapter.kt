@@ -288,7 +288,7 @@ class ProductAdapter(private val callbacks: Callbacks, private val columns: Int)
     }
   }
 
-  enum class Payload { REFRESH, STATUS }
+  private enum class Payload { REFRESH, STATUS }
 
   private class HeaderViewHolder(itemView: View): RecyclerView.ViewHolder(itemView) {
     val icon = itemView.findViewById<ImageView>(R.id.icon)!!

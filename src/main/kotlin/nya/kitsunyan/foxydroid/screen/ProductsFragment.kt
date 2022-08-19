@@ -99,19 +99,19 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
     }
 
     val adapter = recyclerView?.adapter as ProductsAdapter
-    if (source == Source.UPDATES) {
-      for (i in 0 until adapter.itemCount) {
-        if (state?.packageName == adapter.getProductItem(i).packageName) {
-          adapter.setStatus(status, i)
-          break
+    for (i in 0 until adapter.itemCount) {
+      if (state?.packageName == adapter.getProductItem(i).packageName) {
+        if (source == Source.UPDATES) {
+            adapter.setStatus(status, i)
+        } else {
+            adapter.setStatus(null, i)
         }
+        break
       }
-    } else {
-      adapter.setStatus()
     }
 
     if (state is DownloadService.State.Success && isResumed) {
-      withContext(Dispatchers.Default) {
+      lifecycleScope.launch {
         AppInstaller.getInstance(context)?.defaultInstaller?.install(state.release.cacheFileName)
       }
     }
