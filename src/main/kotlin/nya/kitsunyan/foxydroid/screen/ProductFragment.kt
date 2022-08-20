@@ -327,11 +327,19 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
       this.downloading = downloading
       updateButtons()
     }
-    (recyclerView?.adapter as? ProductAdapter)?.setStatus(status)
+
+    if (recyclerView != null) {
+       lifecycleScope.launch {
+         (recyclerView?.adapter as? ProductAdapter)?.setStatus(status)
+       }
+      Unit
+    }
+
     if (state is DownloadService.State.Success && isResumed) {
-      withContext(Dispatchers.Default) {
+      lifecycleScope.launch {
         AppInstaller.getInstance(context)?.defaultInstaller?.install(state.release.cacheFileName)
       }
+      Unit
     }
   }
 

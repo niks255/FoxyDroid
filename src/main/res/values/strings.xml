@@ -38,6 +38,7 @@
   <string name="description">Description</string>
   <string name="details">Details</string>
   <string name="donate">Donate</string>
+  <string name="downloaded">downloaded</string>
   <string name="downloaded_FORMAT">Downloaded %s</string>
   <string name="downloading">Downloading</string>
   <string name="downloading_FORMAT">Downloading %s</string>

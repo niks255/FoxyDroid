@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -59,7 +60,6 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
   private var currentSearchQuery = ""
   private var currentSection: ProductItem.Section = ProductItem.Section.All
   private var currentOrder = ProductItem.Order.NAME
-  private var downloading = false
   private var layoutManagerState: Parcelable? = null
   private var recyclerView: RecyclerView? = null
   private var updateAllButton: Button? = null
@@ -83,7 +83,7 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
       }
     }
 
-  private suspend fun updateDownloadState(state: DownloadService.State?) {
+  private fun updateDownloadState(state: DownloadService.State?) {
     val status = when (state) {
       is DownloadService.State.Pending -> ProductAdapter.Status.Pending
       is DownloadService.State.Connecting -> ProductAdapter.Status.Connecting
@@ -93,27 +93,30 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
       )
       is DownloadService.State.Success, is DownloadService.State.Error, is DownloadService.State.Cancel, null -> null
     }
-    val downloading = status != null
-    if (this.downloading != downloading) {
-      this.downloading = downloading
-    }
 
-    val adapter = recyclerView?.adapter as ProductsAdapter
-    for (i in 0 until adapter.itemCount) {
-      if (state?.packageName == adapter.getProductItem(i).packageName) {
-        if (source == Source.UPDATES) {
-            adapter.setStatus(status, i)
-        } else {
-            adapter.setStatus(null, i)
+    if (recyclerView != null) {
+      lifecycleScope.launch {
+        val adapter = recyclerView?.adapter as ProductsAdapter
+        for (i in 0 until adapter.itemCount) {
+          val product = if (adapter.getItemEnumViewType(i) == ProductsAdapter.ViewType.PRODUCT) {
+            adapter.getProductItem(i)
+          } else {
+            null
+          }
+          if (product != null) {
+            if (state?.packageName == product.packageName) {
+              adapter.setStatus(state.packageName, status, i)
+              break
+            }
+          }
         }
-        break
       }
+      Unit
     }
 
     if (state is DownloadService.State.Success && isResumed) {
-      lifecycleScope.launch {
-        AppInstaller.getInstance(context)?.defaultInstaller?.install(state.release.cacheFileName)
-      }
+        val text = state.name + " " + getString(R.string.downloaded)
+        Toast.makeText(this.context, text, Toast.LENGTH_SHORT).show()
     }
   }
 
@@ -125,6 +128,7 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
     val updateAllButton: Button = layout.findViewById(R.id.update_all)
 
     recyclerView.setHasFixedSize(true)
+    recyclerView.itemAnimator = null
     recyclerView.isVerticalScrollBarEnabled = false
     recyclerView.recycledViewPool.setMaxRecycledViews(ProductsAdapter.ViewType.PRODUCT.ordinal, 30)
     val adapter = ProductsAdapter { screenActivity.navigateProduct(it.packageName) }
@@ -245,57 +249,60 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
     lifecycleScope.launch {
       val adapter = recyclerView?.adapter as ProductsAdapter
       for (i in 0 until adapter.itemCount) {
-        val product = adapter.getProductItem(i)
-        Observable.just(Unit)
-          .concatWith(Database.observable(Database.Subject.Products))
-          .observeOn(Schedulers.io())
-          .flatMapSingle {
-            RxUtils.querySingle {
-              Database.ProductAdapter.get(
-                product.packageName,
-                it
-              )
-            }
-          }
-          .flatMapSingle { products ->
-            RxUtils
-              .querySingle { Database.RepositoryAdapter.getAll(it) }
-              .map { it ->
-                it.asSequence().map { Pair(it.id, it) }.toMap()
-                  .let {
-                    products.mapNotNull { product ->
-                      it[product.repositoryId]?.let {
-                        Pair(
-                          product,
-                          it
-                        )
-                      }
-                    }
-                  }
-              }
-          }
-          .flatMapSingle { products ->
-            RxUtils
-              .querySingle {
-                ProductFragment.Nullable(
-                  Database.InstalledAdapter.get(product.packageName, it)
+        val product = if (adapter.getItemEnumViewType(i) == ProductsAdapter.ViewType.PRODUCT) {
+          adapter.getProductItem(i) } else { null }
+        if (product != null) {
+          Observable.just(Unit)
+            .concatWith(Database.observable(Database.Subject.Products))
+            .observeOn(Schedulers.io())
+            .flatMapSingle {
+              RxUtils.querySingle {
+                Database.ProductAdapter.get(
+                  product.packageName,
+                  it
                 )
               }
-              .map { Pair(products, it) }
-          }
-          .observeOn(AndroidSchedulers.mainThread())
-          .subscribe {
-            val (products, installedItem) = it
-            lifecycleScope.launch {
-              Utils.startUpdate(
-                product.packageName,
-                Database.InstalledAdapter.get(product.packageName, null),
-                products,
-                downloadConnection
-              )
             }
-            Unit
-          }
+            .flatMapSingle { products ->
+              RxUtils
+                .querySingle { Database.RepositoryAdapter.getAll(it) }
+                .map { it ->
+                  it.asSequence().map { Pair(it.id, it) }.toMap()
+                    .let {
+                      products.mapNotNull { product ->
+                        it[product.repositoryId]?.let {
+                          Pair(
+                            product,
+                            it
+                          )
+                        }
+                      }
+                    }
+                }
+            }
+            .flatMapSingle { products ->
+              RxUtils
+                .querySingle {
+                  ProductFragment.Nullable(
+                    Database.InstalledAdapter.get(product.packageName, it)
+                  )
+                }
+                .map { Pair(products, it) }
+            }
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe {
+              val (products, installedItem) = it
+              lifecycleScope.launch {
+                Utils.startUpdate(
+                  product.packageName,
+                  Database.InstalledAdapter.get(product.packageName, null),
+                  products,
+                  downloadConnection
+                )
+              }
+              Unit
+            }
+        }
       }
     }
   }

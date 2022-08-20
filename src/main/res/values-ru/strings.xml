@@ -169,5 +169,6 @@
   <string name="clear_cache_toast">Кэш очищен</string>
     <string name="update_all">Обновить все</string>
     <string name="black">Чёрная</string>
+    <string name="downloaded">скачано</string>
 
 </resources>

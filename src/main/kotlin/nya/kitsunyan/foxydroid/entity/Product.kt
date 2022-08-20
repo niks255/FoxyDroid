@@ -128,9 +128,15 @@ data class Product(val repositoryId: Long, val packageName: String, val name: St
   }
 
   companion object {
-    fun <T> findSuggested(products: List<T>, installedItem: InstalledItem?, extract: (T) -> Product): T? {
-      return products.maxWith(compareBy({ extract(it).compatible &&
-        (installedItem == null || installedItem.signature in extract(it).signatures) }, { extract(it).versionCode }))
+    fun <T> findSuggested(products: List<T>?, installedItem: InstalledItem?, extract: (T) -> Product): T? {
+      return if (!products.isNullOrEmpty()) {
+        products.maxWith(compareBy({
+          extract(it).compatible &&
+                  (installedItem == null || installedItem.signature in extract(it).signatures)
+          }, { extract(it).versionCode }))
+      } else {
+        null
+      }
     }
 
     fun deserialize(repositoryId: Long, description: String, parser: JsonParser): Product {

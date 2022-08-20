@@ -71,10 +71,14 @@ class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
   }
 
   private var status: ProductAdapter.Status? = null
+  private var packageName: String? = null
 
-  fun setStatus(status: ProductAdapter.Status? = null, index: Int) {
-    this.status = status
-    notifyItemChanged(index)
+  fun setStatus(packageName: String?, status: ProductAdapter.Status?, index: Int) {
+    if (this.status != status || this.packageName != packageName) {
+        this.status = status
+        this.packageName = packageName
+        notifyItemChanged(index)
+    }
   }
 
   fun configureDivider(context: Context, position: Int, configuration: DividerItemDecoration.Configuration) {
@@ -178,7 +182,7 @@ class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
           }
         }
         val status = this.status
-        if (status != null) {
+        if (status != null && packageName != null && packageName == productItem.packageName) {
           when (status) {
             is ProductAdapter.Status.Pending -> {
               holder.downloadProgress.visibility = View.GONE
