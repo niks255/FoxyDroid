@@ -1,5 +1,6 @@
 package nya.kitsunyan.foxydroid.screen
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
@@ -73,11 +74,12 @@ class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
   private var status: ProductAdapter.Status? = null
   private var packageName: String? = null
 
-  fun setStatus(packageName: String?, status: ProductAdapter.Status?, index: Int) {
+  @SuppressLint("NotifyDataSetChanged")
+  fun setStatus(packageName: String?, status: ProductAdapter.Status?) {
     if (this.status != status || this.packageName != packageName) {
         this.status = status
         this.packageName = packageName
-        notifyItemChanged(index)
+        notifyDataSetChanged()
     }
   }
 
@@ -135,7 +137,11 @@ class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
   override fun onCreateViewHolder(parent: ViewGroup, viewType: ViewType): RecyclerView.ViewHolder {
     return when (viewType) {
       ViewType.PRODUCT -> ProductViewHolder(parent.inflate(R.layout.product_item)).apply {
-        itemView.setOnClickListener { onClick(getProductItem(adapterPosition)) }
+        itemView.setOnClickListener {
+          if (getItemEnumViewType(adapterPosition) == ViewType.PRODUCT) {
+              onClick(getProductItem(adapterPosition))
+          }
+        }
       }
       ViewType.LOADING -> LoadingViewHolder(parent.context)
       ViewType.EMPTY -> EmptyViewHolder(parent.context)

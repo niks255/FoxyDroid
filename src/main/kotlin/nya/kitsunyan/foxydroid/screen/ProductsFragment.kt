@@ -85,33 +85,22 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
 
   private fun updateDownloadState(state: DownloadService.State?) {
     val status = when (state) {
-      is DownloadService.State.Pending -> ProductAdapter.Status.Pending
-      is DownloadService.State.Connecting -> ProductAdapter.Status.Connecting
       is DownloadService.State.Downloading -> ProductAdapter.Status.Downloading(
         state.read,
         state.total
       )
-      is DownloadService.State.Success, is DownloadService.State.Error, is DownloadService.State.Cancel, null -> null
+      is DownloadService.State.Pending,
+      is DownloadService.State.Connecting,
+      is DownloadService.State.Success,
+      is DownloadService.State.Error,
+      is DownloadService.State.Cancel, null -> null
     }
 
     if (recyclerView != null) {
       lifecycleScope.launch {
         val adapter = recyclerView?.adapter as ProductsAdapter
-        for (i in 0 until adapter.itemCount) {
-          val product = if (adapter.getItemEnumViewType(i) == ProductsAdapter.ViewType.PRODUCT) {
-            adapter.getProductItem(i)
-          } else {
-            null
-          }
-          if (product != null) {
-            if (state?.packageName == product.packageName) {
-              adapter.setStatus(state.packageName, status, i)
-              break
-            }
-          }
-        }
+        adapter.setStatus(state?.packageName, status)
       }
-      Unit
     }
 
     if (state is DownloadService.State.Success && isResumed) {
