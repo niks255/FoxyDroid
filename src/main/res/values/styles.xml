@@ -30,6 +30,8 @@
 
   <style name="Theme.Main.Black" parent="Theme.Main.Dark">
     <item name="android:colorBackground">@color/background_black</item>
+    <item name="android:colorPrimary">@color/background_dark</item>
+    <item name="android:colorPrimaryDark">@color/background_dark</item>
   </style>
 
   <style name="Widget.Main.Toolbar" parent="@android:style/Widget.Material.Toolbar">
