@@ -12,10 +12,7 @@ import android.os.IBinder
 import android.view.ContextThemeWrapper
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import nya.kitsunyan.foxydroid.MainActivity
-import nya.kitsunyan.foxydroid.NOTIFICATION_CHANNEL_INSTALLER
-import nya.kitsunyan.foxydroid.NOTIFICATION_ID_INSTALLER
-import nya.kitsunyan.foxydroid.R
+import nya.kitsunyan.foxydroid.*
 import nya.kitsunyan.foxydroid.utility.Utils
 import nya.kitsunyan.foxydroid.utility.extension.android.Android
 import nya.kitsunyan.foxydroid.utility.extension.android.notificationManager
@@ -97,7 +94,7 @@ class InstallerService : Service() {
                 null
             }
 
-        val notificationTag = "${NOTIFICATION_TAG_PREFIX}$name"
+        val notificationTag = "download-$name"
 
         // start building
         val builder = NotificationCompat
@@ -121,13 +118,9 @@ class InstallerService : Service() {
                 )
             }
             PackageInstaller.STATUS_SUCCESS -> {
-                if (installerAction == ACTION_UNINSTALL)
-                // remove any notification for this app
-                    notificationManager.cancel(notificationTag, NOTIFICATION_ID_INSTALLER)
-                else {
-                    Toast.makeText(this, java.lang.String.valueOf(appLabel) + " "
-                            + getString(R.string.installed_toast), Toast.LENGTH_SHORT).show()
-                }
+                notificationManager.cancel(notificationTag, NOTIFICATION_ID_DOWNLOADING)
+                Toast.makeText(this, java.lang.String.valueOf(appLabel) + " "
+                        + getString(R.string.installed_toast), Toast.LENGTH_SHORT).show()
             }
             PackageInstaller.STATUS_FAILURE_ABORTED -> {
                 // do nothing if user cancels

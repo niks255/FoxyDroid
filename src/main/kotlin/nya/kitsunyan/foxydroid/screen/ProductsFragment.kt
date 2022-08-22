@@ -14,18 +14,15 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.database.CursorOwner
 import nya.kitsunyan.foxydroid.database.Database
 import nya.kitsunyan.foxydroid.entity.ProductItem
-import nya.kitsunyan.foxydroid.installer.AppInstaller
 import nya.kitsunyan.foxydroid.service.Connection
 import nya.kitsunyan.foxydroid.service.DownloadService
 import nya.kitsunyan.foxydroid.utility.RxUtils
-import nya.kitsunyan.foxydroid.utility.Utils
+import nya.kitsunyan.foxydroid.utility.Utils.updateAll
 import nya.kitsunyan.foxydroid.widget.DividerItemDecoration
 import nya.kitsunyan.foxydroid.widget.RecyclerFastScroller
 
@@ -125,7 +122,7 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
     recyclerView.addItemDecoration(DividerItemDecoration(recyclerView.context, adapter::configureDivider))
     RecyclerFastScroller(recyclerView)
 
-    updateAllButton.setOnClickListener { updateAll() }
+    updateAllButton.setOnClickListener { lifecycleScope.launch { updateAll(downloadConnection) } }
 
     this.recyclerView = recyclerView
     this.updateAllButton = updateAllButton
@@ -230,68 +227,6 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
       this.order = order
       if (view != null) {
         screenActivity.cursorOwner.attach(this, request)
-      }
-    }
-  }
-
-  private fun updateAll() {
-    lifecycleScope.launch {
-      val adapter = recyclerView?.adapter as ProductsAdapter
-      for (i in 0 until adapter.itemCount) {
-        val product = if (adapter.getItemEnumViewType(i) == ProductsAdapter.ViewType.PRODUCT) {
-          adapter.getProductItem(i) } else { null }
-        if (product != null) {
-          Observable.just(Unit)
-            .concatWith(Database.observable(Database.Subject.Products))
-            .observeOn(Schedulers.io())
-            .flatMapSingle {
-              RxUtils.querySingle {
-                Database.ProductAdapter.get(
-                  product.packageName,
-                  it
-                )
-              }
-            }
-            .flatMapSingle { products ->
-              RxUtils
-                .querySingle { Database.RepositoryAdapter.getAll(it) }
-                .map { it ->
-                  it.asSequence().map { Pair(it.id, it) }.toMap()
-                    .let {
-                      products.mapNotNull { product ->
-                        it[product.repositoryId]?.let {
-                          Pair(
-                            product,
-                            it
-                          )
-                        }
-                      }
-                    }
-                }
-            }
-            .flatMapSingle { products ->
-              RxUtils
-                .querySingle {
-                  ProductFragment.Nullable(
-                    Database.InstalledAdapter.get(product.packageName, it)
-                  )
-                }
-                .map { Pair(products, it) }
-            }
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe {
-              val (products, installedItem) = it
-              lifecycleScope.launch {
-                Utils.startUpdate(
-                  product.packageName,
-                  Database.InstalledAdapter.get(product.packageName, null),
-                  products,
-                  downloadConnection
-                )
-              }
-              Unit
-            }
-        }
       }
     }
   }

@@ -10,11 +10,21 @@ import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.os.LocaleList
 import android.provider.Settings
+import androidx.core.content.ContentProviderCompat.requireContext
+import androidx.lifecycle.lifecycleScope
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.launch
 import nya.kitsunyan.foxydroid.BuildConfig
 import nya.kitsunyan.foxydroid.R
+import nya.kitsunyan.foxydroid.database.Database
 import nya.kitsunyan.foxydroid.entity.InstalledItem
 import nya.kitsunyan.foxydroid.entity.Product
+import nya.kitsunyan.foxydroid.entity.ProductItem
 import nya.kitsunyan.foxydroid.entity.Repository
+import nya.kitsunyan.foxydroid.screen.ProductFragment
+import nya.kitsunyan.foxydroid.screen.ProductsAdapter
 import nya.kitsunyan.foxydroid.service.Connection
 import nya.kitsunyan.foxydroid.service.DownloadService
 import nya.kitsunyan.foxydroid.utility.extension.android.*
@@ -72,6 +82,67 @@ object Utils {
     } else {
       ""
     }
+  }
+
+  fun updateAll(downloadConnection: Connection<DownloadService.Binder, DownloadService>) {
+      val productsAvailableForUpdate: List<ProductItem> = Database.ProductAdapter
+        .query(installed = true, updates = true, searchQuery = "", section = ProductItem.Section.All, order = ProductItem.Order.NAME, signal = null)
+        .use {
+          it.asSequence().map(Database.ProductAdapter::transformItem).toList()
+        }
+      if (productsAvailableForUpdate.isNotEmpty()) {
+        for (product in productsAvailableForUpdate) {
+          Observable.just(Unit)
+            .concatWith(Database.observable(Database.Subject.Products))
+            .observeOn(Schedulers.io())
+            .flatMapSingle {
+              RxUtils.querySingle {
+                Database.ProductAdapter.get(
+                  product.packageName,
+                  it
+                )
+              }
+            }
+            .flatMapSingle { products ->
+              RxUtils
+                .querySingle { Database.RepositoryAdapter.getAll(it) }
+                .map { it ->
+                  it.asSequence().map { Pair(it.id, it) }.toMap()
+                    .let {
+                      products.mapNotNull { product ->
+                        it[product.repositoryId]?.let {
+                          Pair(
+                            product,
+                            it
+                          )
+                        }
+                      }
+                    }
+                }
+            }
+            .flatMapSingle { products ->
+              RxUtils
+                .querySingle {
+                  ProductFragment.Nullable(
+                    Database.InstalledAdapter.get(product.packageName, it)
+                  )
+                }
+                .map { Pair(products, it) }
+            }
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe {
+              val (products, installedItem) = it
+              downloadConnection?.let { it1 ->
+                startUpdate(
+                  product.packageName,
+                  Database.InstalledAdapter.get(product.packageName, null),
+                  products,
+                  it1
+                )
+              }
+            }
+        }
+      }
   }
 
   fun startUpdate(packageName: String, installedItem: InstalledItem?, products: List<Pair<Product, Repository>>,
