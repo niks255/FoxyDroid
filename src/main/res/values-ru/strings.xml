@@ -170,5 +170,6 @@
     <string name="update_all">Обновить все</string>
     <string name="black">Чёрная</string>
     <string name="downloaded">скачано</string>
+  <string name="system_black">Системная (черная)</string>
 
 </resources>

@@ -121,7 +121,7 @@ object Preferences {
 
   sealed class Theme(override val valueString: String): Enumeration<Theme> {
     override val values: List<Theme>
-      get() = if (Android.sdk(29)) listOf(System, Light, Dark, Black) else listOf(Light, Dark, Black)
+      get() = if (Android.sdk(29)) listOf(System, SystemBlack, Light, Dark, Black) else listOf(Light, Dark, Black)
 
     abstract fun getResId(configuration: Configuration): Int
 
@@ -129,6 +129,13 @@ object Preferences {
       override fun getResId(configuration: Configuration): Int {
         return if ((configuration.uiMode and Configuration.UI_MODE_NIGHT_YES) != 0)
           R.style.Theme_Main_Dark else R.style.Theme_Main_Light
+      }
+    }
+
+    object SystemBlack: Theme("system_black") {
+      override fun getResId(configuration: Configuration): Int {
+        return if ((configuration.uiMode and Configuration.UI_MODE_NIGHT_YES) != 0)
+          R.style.Theme_Main_Black else R.style.Theme_Main_Light
       }
     }
 
