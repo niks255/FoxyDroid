@@ -1,0 +1,15 @@
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:targetApi="25">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_update"
+        android:shortcutId="updates_tab"
+        android:shortcutShortLabel="@string/updates">
+        <intent
+            android:action="nya.kitsunyan.foxydroid.intent.action.UPDATES"
+            android:targetPackage="nya.kitsunyan.foxydroid"
+            android:targetClass="nya.kitsunyan.foxydroid.MainActivity">
+        </intent>
+    </shortcut>
+</shortcuts>
