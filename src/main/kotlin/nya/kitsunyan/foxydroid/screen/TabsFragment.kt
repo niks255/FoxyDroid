@@ -101,7 +101,7 @@ class TabsFragment: ScreenFragment() {
   private var repositoriesDisposable: Disposable? = null
   private var sectionsAnimator: ValueAnimator? = null
 
-  private var needSelectUpdates = false
+  private var selectedTab: Int? = null
 
   private val productFragments: Sequence<ProductsFragment>
     get() = if (host == null) emptySequence() else
@@ -342,9 +342,9 @@ class TabsFragment: ScreenFragment() {
     super.onViewStateRestored(savedInstanceState)
 
     (searchMenuItem?.actionView as FocusSearchView).allowFocus = true
-    if (needSelectUpdates) {
-      needSelectUpdates = false
-      selectUpdatesInternal(false)
+    if (selectedTab != null) {
+      selectTabInternal(false, selectedTab!!)
+      selectedTab = null
     }
   }
 
@@ -379,14 +379,18 @@ class TabsFragment: ScreenFragment() {
     (0 until layout.tabs.childCount).forEach { layout.tabs.getChildAt(it).isSelected = it == source.ordinal }
   }
 
-  internal fun selectUpdates() = selectUpdatesInternal(true)
+  internal fun selectUpdates() = selectTabInternal(true,
+                                                        ProductsFragment.Source.UPDATES.ordinal)
 
-  private fun selectUpdatesInternal(allowSmooth: Boolean) {
+  internal fun selectInstalled() = selectTabInternal(true,
+                                                        ProductsFragment.Source.INSTALLED.ordinal)
+
+  private fun selectTabInternal(allowSmooth: Boolean, source: Int) {
     if (view != null) {
       val viewPager = viewPager
-      viewPager?.setCurrentItem(ProductsFragment.Source.UPDATES.ordinal, allowSmooth && viewPager.isLaidOut)
+      viewPager?.setCurrentItem(source, allowSmooth && viewPager.isLaidOut)
     } else {
-      needSelectUpdates = true
+      selectedTab = source
     }
   }
 

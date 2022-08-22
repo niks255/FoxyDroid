@@ -31,6 +31,7 @@ abstract class ScreenActivity: FragmentActivity() {
 
   sealed class SpecialIntent {
     object Updates: SpecialIntent()
+    object Installed: SpecialIntent()
     class Install(val packageName: String?, val cacheFileName: String?) : SpecialIntent()
   }
 
@@ -203,6 +204,14 @@ abstract class ScreenActivity: FragmentActivity() {
         }
         val tabsFragment = currentFragment as TabsFragment
         tabsFragment.selectUpdates()
+      }
+      is SpecialIntent.Installed -> {
+        if (currentFragment !is TabsFragment) {
+          fragmentStack.clear()
+          replaceFragment(TabsFragment(), true)
+        }
+        val tabsFragment = currentFragment as TabsFragment
+        tabsFragment.selectInstalled()
       }
       is SpecialIntent.Install -> {
         val packageName = specialIntent.packageName
