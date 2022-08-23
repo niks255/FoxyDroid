@@ -14,7 +14,7 @@
     </shortcut>
     <shortcut
         android:enabled="true"
-        android:icon="@drawable/ic_archive"
+        android:icon="@drawable/ic_launch"
         android:shortcutId="installed_tab"
         android:shortcutShortLabel="@string/installed">
         <intent

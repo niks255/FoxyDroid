@@ -1,6 +1,7 @@
 package nya.kitsunyan.foxydroid.screen
 
 import android.database.Cursor
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Parcelable
 import android.view.LayoutInflater
@@ -14,6 +15,7 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.database.CursorOwner
@@ -22,6 +24,7 @@ import nya.kitsunyan.foxydroid.entity.ProductItem
 import nya.kitsunyan.foxydroid.service.Connection
 import nya.kitsunyan.foxydroid.service.DownloadService
 import nya.kitsunyan.foxydroid.utility.RxUtils
+import nya.kitsunyan.foxydroid.utility.Utils
 import nya.kitsunyan.foxydroid.utility.Utils.updateAll
 import nya.kitsunyan.foxydroid.widget.DividerItemDecoration
 import nya.kitsunyan.foxydroid.widget.RecyclerFastScroller
@@ -112,6 +115,7 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
     val layout = inflater.inflate(R.layout.products, container, false)
     val recyclerView: RecyclerView = layout.findViewById(R.id.products_recycler_view)
     val updateAllButton: Button = layout.findViewById(R.id.update_all)
+    updateAllButton.setTextColor(Color.WHITE)
 
     recyclerView.setHasFixedSize(true)
     recyclerView.itemAnimator = null
@@ -122,8 +126,7 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
     recyclerView.addItemDecoration(DividerItemDecoration(recyclerView.context, adapter::configureDivider))
     RecyclerFastScroller(recyclerView)
 
-    updateAllButton.setOnClickListener { lifecycleScope.launch { updateAll(downloadConnection) } }
-
+    updateAllButton.setOnClickListener { runUpdate(true) }
     this.recyclerView = recyclerView
     this.updateAllButton = updateAllButton
     return layout
@@ -171,6 +174,15 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
       ?.let { outState.putParcelable(STATE_LAYOUT_MANAGER, it) }
   }
 
+  private fun runUpdate(force: Boolean = false) {
+    if (ScreenActivity.runUpdate || force) {
+      ScreenActivity.runUpdate = false
+      lifecycleScope.launch(Dispatchers.Default) {
+        updateAll(downloadConnection)
+      }
+    }
+  }
+
   override fun onCursorData(request: CursorOwner.Request, cursor: Cursor?) {
     (recyclerView?.adapter as? ProductsAdapter)?.apply {
       this.cursor = cursor
@@ -202,6 +214,7 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
       currentOrder = order
       recyclerView?.scrollToPosition(0)
     }
+    runUpdate()
   }
 
   internal fun setSearchQuery(searchQuery: String) {

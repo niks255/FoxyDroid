@@ -361,7 +361,7 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
       ProductAdapter.Action.INSTALL,
       ProductAdapter.Action.UPDATE, -> {
         val installedItem = installed?.installedItem
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.Default) {
           Utils.startUpdate(
             packageName,
             installedItem,

@@ -18,7 +18,6 @@
         android:drawableEnd="@drawable/ic_update"
         android:fontFamily="sans-serif-medium"
         android:padding="8dp"
-        android:textColor="?android:attr/textColorPrimary"
         android:text="@string/update_all"
         android:visibility="gone" />
 

@@ -17,13 +17,7 @@ import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.PublishSubject
-import nya.kitsunyan.foxydroid.BuildConfig
-import nya.kitsunyan.foxydroid.NOTIFICATION_CHANNEL_SYNCING
-import nya.kitsunyan.foxydroid.NOTIFICATION_CHANNEL_UPDATES
-import nya.kitsunyan.foxydroid.NOTIFICATION_ID_SYNCING
-import nya.kitsunyan.foxydroid.NOTIFICATION_ID_UPDATES
-import nya.kitsunyan.foxydroid.MainActivity
-import nya.kitsunyan.foxydroid.R
+import nya.kitsunyan.foxydroid.*
 import nya.kitsunyan.foxydroid.content.Preferences
 import nya.kitsunyan.foxydroid.database.Database
 import nya.kitsunyan.foxydroid.entity.ProductItem
@@ -362,12 +356,22 @@ class SyncService: ConnectionService<SyncService.Binder>() {
         productItems.size, productItems.size))
       .setColor(ContextThemeWrapper(this, R.style.Theme_Main_Light)
         .getColorFromAttr(android.R.attr.colorAccent).defaultColor)
-      .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java)
-        .setAction(MainActivity.ACTION_UPDATES),
-        if (Android.sdk(23))
-          PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        else
-          PendingIntent.FLAG_UPDATE_CURRENT))
+      .setContentIntent(
+        PendingIntent.getActivity(this, 0,
+          Intent(this, MainActivity::class.java)
+            .setAction(MainActivity.ACTION_UPDATES),
+          if (Android.sdk(23))
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+          else
+            PendingIntent.FLAG_UPDATE_CURRENT))
+      .addAction(R.drawable.ic_update, getString(R.string.update_all),
+        PendingIntent.getActivity(this, 0,
+          Intent(this, MainActivity::class.java)
+            .setAction(MainActivity.ACTION_UPDATE_ALL),
+          if (Android.sdk(23))
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+          else
+            PendingIntent.FLAG_UPDATE_CURRENT))
       .setStyle(NotificationCompat.InboxStyle().applyHack {
         for (productItem in productItems.take(maxUpdates)) {
           val builder = SpannableStringBuilder(productItem.name)

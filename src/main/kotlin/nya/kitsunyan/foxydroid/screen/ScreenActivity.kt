@@ -26,12 +26,13 @@ import nya.kitsunyan.foxydroid.utility.extension.text.nullIfEmpty
 
 abstract class ScreenActivity: FragmentActivity() {
   companion object {
+    var runUpdate: Boolean = false
     private const val STATE_FRAGMENT_STACK = "fragmentStack"
   }
 
   sealed class SpecialIntent {
-    object Updates: SpecialIntent()
     object Installed: SpecialIntent()
+    object Updates : SpecialIntent()
     class Install(val packageName: String?, val cacheFileName: String?) : SpecialIntent()
   }
 
