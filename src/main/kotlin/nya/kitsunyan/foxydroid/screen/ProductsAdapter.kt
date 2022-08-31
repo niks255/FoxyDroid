@@ -33,7 +33,9 @@ class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
     val status = itemView.findViewById<TextView>(R.id.status)!!
     val summary = itemView.findViewById<TextView>(R.id.summary)!!
     val icon = itemView.findViewById<ImageView>(R.id.icon)!!
-    val downloadProgress: ProgressBar = itemView.findViewById(R.id.download_progress)
+    val statusLayout = itemView.findViewById<View>(R.id.item_status_layout)!!
+    val downloadStatus = itemView.findViewById<TextView>(R.id.item_status)!!
+    val downloadProgress: ProgressBar = itemView.findViewById(R.id.item_progress)
     val progressIcon: Drawable
     val defaultIcon: Drawable
 
@@ -149,6 +151,7 @@ class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
   }
 
   override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+    val context = holder.itemView.context
     when (getItemEnumViewType(position)) {
       ViewType.PRODUCT -> {
         holder as ProductViewHolder
@@ -188,25 +191,23 @@ class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
           }
         }
         val status = this.status
+
         if (status != null && packageName != null && packageName == productItem.packageName) {
+          holder.statusLayout.visibility = View.VISIBLE
           when (status) {
-            is ProductAdapter.Status.Pending -> {
-              holder.downloadProgress.visibility = View.GONE
-            }
-            is ProductAdapter.Status.Connecting -> {
-              holder.downloadProgress.visibility = View.GONE
-            }
             is ProductAdapter.Status.Downloading -> {
-              holder.downloadProgress.visibility = View.VISIBLE
+              holder.downloadStatus.text = context.getString(R.string.downloading_FORMAT, if (status.total == null)
+                status.read.formatSize() else "${status.read.formatSize()} / ${status.total.formatSize()}")
               holder.downloadProgress.isIndeterminate = status.total == null
               if (status.total != null) {
                   holder.downloadProgress.progress = (holder.downloadProgress.max.toFloat() * status.read / status.total).roundToInt()
               }
               Unit
             }
+            else -> {}
           }
         } else {
-          holder.downloadProgress.visibility = View.GONE
+          holder.statusLayout.visibility = View.GONE
         }
         val enabled = productItem.compatible || productItem.installedVersion.isNotEmpty()
         sequenceOf(holder.name, holder.status, holder.summary).forEach { it.isEnabled = enabled }

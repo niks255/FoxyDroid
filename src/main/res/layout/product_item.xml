@@ -60,14 +60,30 @@
       android:textSize="14sp"
       android:singleLine="true" />
 
-    <ProgressBar
-        android:id="@+id/download_progress"
+    <LinearLayout
+        android:id="@+id/item_status_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:layout_marginBottom="2dp"
-        android:visibility="gone"
-        style="@android:style/Widget.Material.ProgressBar.Horizontal" />
+        android:orientation="vertical" >
+
+      <TextView
+          android:id="@+id/item_status"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_gravity="center_vertical"
+          android:textColor="?android:attr/textColorSecondary"
+          android:textSize="12sp"
+          android:singleLine="true" />
+
+      <ProgressBar
+          android:id="@+id/item_progress"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_gravity="center_vertical"
+          android:layout_marginBottom="2dp"
+          style="@android:style/Widget.Material.ProgressBar.Horizontal" />
+
+    </LinearLayout>
   </LinearLayout>
 
 </LinearLayout>
