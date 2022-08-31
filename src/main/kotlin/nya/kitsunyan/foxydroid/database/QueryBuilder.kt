@@ -38,8 +38,15 @@ class QueryBuilder {
     if (BuildConfig.DEBUG) {
       synchronized(QueryBuilder::class.java) {
         debug(query)
-        db.rawQuery("EXPLAIN QUERY PLAN $query", arguments).use { it.asSequence()
-          .forEach { debug(":: ${it.getString(it.getColumnIndex("detail"))}") } }
+        db.rawQuery("EXPLAIN QUERY PLAN $query", arguments).use { query ->
+        query.asSequence()
+          .forEach {
+            val index = it.getColumnIndex("detail")
+            if (index >= 0) {
+              debug(":: ${it.getString(index)}")
+            }
+          }
+        }
       }
     }
     return db.rawQuery(query, arguments, signal)
