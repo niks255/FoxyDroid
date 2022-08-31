@@ -36,9 +36,4 @@ abstract class BaseInstaller(val context: Context) : InstallationEvents {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }
-
-    sealed class Event {
-        object INSTALL : Event()
-        object UNINSTALL : Event()
-    }
 }

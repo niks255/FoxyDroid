@@ -2,7 +2,6 @@ package nya.kitsunyan.foxydroid.screen
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageInstaller
 import android.os.Bundle
 import android.os.Parcel
 import android.view.View
@@ -18,7 +17,6 @@ import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.content.Preferences
 import nya.kitsunyan.foxydroid.database.CursorOwner
 import nya.kitsunyan.foxydroid.installer.AppInstaller
-import nya.kitsunyan.foxydroid.installer.InstallerService
 import nya.kitsunyan.foxydroid.utility.KParcelable
 import nya.kitsunyan.foxydroid.utility.Utils
 import nya.kitsunyan.foxydroid.utility.extension.resources.getDrawableFromAttr

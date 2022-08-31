@@ -72,16 +72,13 @@ class InstallerService : Service() {
      * @param intent provided by PackageInstaller to the callback service/activity.
      */
     private fun notifyStatus(intent: Intent) {
-        // unpack from intent
         val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1)
         val sessionId = intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -1)
 
-        // get package information from session
         val sessionInstaller = this.packageManager.packageInstaller
         val session = if (sessionId > 0) sessionInstaller.getSessionInfo(sessionId) else null
         val name = session?.appPackageName ?: intent.getStringExtra(PackageInstaller.EXTRA_PACKAGE_NAME)
         val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
-        val installerAction = intent.getStringExtra(KEY_ACTION)
 
         val appLabel = try {
                 if (name != null) packageManager.getApplicationLabel(

@@ -1,7 +1,6 @@
 package nya.kitsunyan.foxydroid
 
 import android.content.Intent
-import android.content.pm.PackageInstaller
 import nya.kitsunyan.foxydroid.BuildConfig
 import nya.kitsunyan.foxydroid.screen.ScreenActivity
 
