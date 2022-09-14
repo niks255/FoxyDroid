@@ -13,7 +13,7 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 
-class DefaultInstaller(context: Context) : BaseInstaller(context) {
+class SessionInstaller(context: Context) : BaseInstaller(context) {
 
     private val packageManager = context.packageManager
     private val sessionInstaller = packageManager.packageInstaller
@@ -47,7 +47,7 @@ class DefaultInstaller(context: Context) : BaseInstaller(context) {
         mDefaultInstaller(cacheFile)
     }
 
-    override suspend fun uninstall(packageName: String) = mDefaultUninstaller(packageName)
+    override suspend fun uninstall(packageName: String) = mSessionUninstaller(packageName)
 
     private fun mDefaultInstaller(cacheFile: File) {
         // clean up inactive sessions
@@ -112,7 +112,7 @@ class DefaultInstaller(context: Context) : BaseInstaller(context) {
         }
     }
 
-    private suspend fun mDefaultUninstaller(packageName: String) {
+    private suspend fun mSessionUninstaller(packageName: String) {
         intent.putExtra(InstallerService.KEY_ACTION, InstallerService.ACTION_UNINSTALL)
 
         val pendingIntent = PendingIntent.getService(context, -1, intent, flags)

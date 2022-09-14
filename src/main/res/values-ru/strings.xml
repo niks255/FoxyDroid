@@ -171,5 +171,7 @@
     <string name="black">Чёрная</string>
     <string name="downloaded">скачано</string>
   <string name="system_black">Системная (черная)</string>
+    <string name="use_legacy_installer">Использовать старый установщик</string>
+  <string name="use_legacy_installer_summary">Включите если испытываете проблемы с установкой приложений</string>
 
 </resources>

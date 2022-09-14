@@ -84,6 +84,8 @@ class PreferencesFragment: ScreenFragment() {
           is Preferences.Theme.Black -> getString(R.string.black)
         }
       }
+      addSwitch(Preferences.Key.UseLegacyInstaller, getString(R.string.use_legacy_installer),
+        getString(R.string.use_legacy_installer_summary))
       addSwitch(Preferences.Key.IncompatibleVersions, getString(R.string.incompatible_versions),
         getString(R.string.incompatible_versions_summary))
     }

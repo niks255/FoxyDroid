@@ -27,7 +27,6 @@ class InstallerService : Service() {
         const val KEY_ACTION = "installerAction"
         const val KEY_APP_NAME = "appName"
         const val ACTION_UNINSTALL = "uninstall"
-        private const val NOTIFICATION_TAG_PREFIX = "install-"
     }
 
     override fun onCreate() {
@@ -79,6 +78,7 @@ class InstallerService : Service() {
         val session = if (sessionId > 0) sessionInstaller.getSessionInfo(sessionId) else null
         val name = session?.appPackageName ?: intent.getStringExtra(PackageInstaller.EXTRA_PACKAGE_NAME)
         val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
+        val installerAction = intent.getStringExtra(KEY_ACTION)
 
         val appLabel = try {
                 if (name != null) packageManager.getApplicationLabel(
@@ -116,8 +116,12 @@ class InstallerService : Service() {
             }
             PackageInstaller.STATUS_SUCCESS -> {
                 notificationManager.cancel(notificationTag, NOTIFICATION_ID_DOWNLOADING)
-                Toast.makeText(this, java.lang.String.valueOf(appLabel) + " "
-                        + getString(R.string.installed_toast), Toast.LENGTH_SHORT).show()
+                if (installerAction != ACTION_UNINSTALL) {
+                    Toast.makeText(
+                        this, java.lang.String.valueOf(appLabel) + " "
+                                + getString(R.string.installed_toast), Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
             PackageInstaller.STATUS_FAILURE_ABORTED -> {
                 // do nothing if user cancels

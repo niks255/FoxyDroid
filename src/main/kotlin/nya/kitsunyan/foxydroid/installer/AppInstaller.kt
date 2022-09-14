@@ -1,6 +1,7 @@
 package nya.kitsunyan.foxydroid.installer
 
 import android.content.Context
+import nya.kitsunyan.foxydroid.content.Preferences
 
 abstract class AppInstaller {
     abstract val defaultInstaller: BaseInstaller?
@@ -15,7 +16,11 @@ abstract class AppInstaller {
                         INSTANCE = object : AppInstaller() {
                             override val defaultInstaller: BaseInstaller
                                 get() {
-                                    return DefaultInstaller(it)
+                                    return if (Preferences[Preferences.Key.UseLegacyInstaller]) {
+                                        LegacyInstaller(it)
+                                    } else {
+                                        SessionInstaller(it)
+                                    }
                                 }
                         }
                     }

@@ -356,6 +356,7 @@ class SyncService: ConnectionService<SyncService.Binder>() {
         productItems.size, productItems.size))
       .setColor(ContextThemeWrapper(this, R.style.Theme_Main_Light)
         .getColorFromAttr(android.R.attr.colorAccent).defaultColor)
+      .setNumber(productItems.size)
       .setContentIntent(
         PendingIntent.getActivity(this, 0,
           Intent(this, MainActivity::class.java)
