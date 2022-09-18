@@ -144,6 +144,7 @@ android {
 repositories {
   google()
   mavenCentral()
+  maven { url 'https://jitpack.io' }
 }
 
 dependencies {
@@ -151,10 +152,11 @@ dependencies {
   implementation 'androidx.fragment:fragment-ktx:1.5.2'
   implementation 'androidx.viewpager2:viewpager2:1.0.0'
   implementation 'androidx.vectordrawable:vectordrawable:1.1.0'
+  implementation "com.github.topjohnwu.libsu:core:5.0.3"
   //noinspection GradleDependency
   implementation 'com.squareup.okhttp3:okhttp:4.10.0'
   implementation 'io.reactivex.rxjava3:rxjava:3.1.5'
   implementation 'io.reactivex.rxjava3:rxandroid:3.0.0'
-  implementation 'com.fasterxml.jackson.core:jackson-core:2.13.3'
+  implementation 'com.fasterxml.jackson.core:jackson-core:2.13.4'
   implementation 'com.squareup.picasso:picasso:2.71828'
 }

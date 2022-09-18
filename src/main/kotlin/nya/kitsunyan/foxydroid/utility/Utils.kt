@@ -10,14 +10,17 @@ import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.os.LocaleList
 import android.provider.Settings
+import android.widget.Toast
 import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.lifecycle.lifecycleScope
+import com.topjohnwu.superuser.Shell
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.coroutines.launch
 import nya.kitsunyan.foxydroid.BuildConfig
 import nya.kitsunyan.foxydroid.R
+import nya.kitsunyan.foxydroid.content.Preferences
 import nya.kitsunyan.foxydroid.database.Database
 import nya.kitsunyan.foxydroid.entity.InstalledItem
 import nya.kitsunyan.foxydroid.entity.Product
@@ -83,6 +86,10 @@ object Utils {
       ""
     }
   }
+
+  val rootInstallerEnabled: Boolean
+    get() = Preferences[Preferences.Key.SilentInstall] &&
+            (Shell.getCachedShell()?.isRoot ?: Shell.getShell().isRoot)
 
   fun startUpdate(packageName: String, installedItem: InstalledItem?, products: List<Pair<Product, Repository>>,
                   downloadConnection: Connection<DownloadService.Binder, DownloadService>

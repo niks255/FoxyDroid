@@ -107,7 +107,10 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
 
     if (state is DownloadService.State.Success && isResumed) {
         val text = state.name + " " + getString(R.string.downloaded)
+        updateAllButton?.isEnabled = true
         Toast.makeText(this.context, text, Toast.LENGTH_SHORT).show()
+    } else {
+        updateAllButton?.isEnabled = false
     }
   }
 
@@ -182,7 +185,10 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
       val productsAvailableForUpdate: List<ProductItem> = Database.ProductAdapter
         .query(installed = true, updates = true, searchQuery = "", section = ProductItem.Section.All, order = ProductItem.Order.NAME, signal = null)
         .use { it.asSequence().map(Database.ProductAdapter::transformItem).toList() }
-      updateAll(productsAvailableForUpdate)
+      if (productsAvailableForUpdate.isNotEmpty()) {
+        updateAllButton?.isEnabled = false
+        updateAll(productsAvailableForUpdate)
+      }
     }
   }
 

@@ -30,6 +30,7 @@ import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.content.Cache
 import nya.kitsunyan.foxydroid.entity.Release
 import nya.kitsunyan.foxydroid.entity.Repository
+import nya.kitsunyan.foxydroid.installer.AppInstaller
 import nya.kitsunyan.foxydroid.network.Downloader
 import nya.kitsunyan.foxydroid.utility.Utils
 import nya.kitsunyan.foxydroid.utility.extension.android.*
@@ -316,7 +317,15 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
       consumed = true
     }
     if (!consumed) {
-       showNotificationInstall(task)
+      if (Utils.rootInstallerEnabled) {
+        scope.launch {
+          AppInstaller.getInstance(this@DownloadService)?.
+                        defaultInstaller?.
+                        install(task.release.cacheFileName)
+        }
+      } else {
+        showNotificationInstall(task)
+      }
     }
   }
 

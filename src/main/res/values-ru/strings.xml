@@ -173,5 +173,8 @@
   <string name="system_black">Системная (черная)</string>
     <string name="use_legacy_installer">Использовать старый установщик</string>
   <string name="use_legacy_installer_summary">Включите если испытываете проблемы с установкой приложений</string>
+  <string name="root_access_error">Не удалось получить root доступ</string>
+  <string name="silent_install">Тихая установка</string>
+  <string name="silent_install_summary">Необходимы права root</string>
 
 </resources>
