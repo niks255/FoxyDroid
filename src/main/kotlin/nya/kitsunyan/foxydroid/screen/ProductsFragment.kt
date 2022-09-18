@@ -15,6 +15,7 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import nya.kitsunyan.foxydroid.R
@@ -24,7 +25,8 @@ import nya.kitsunyan.foxydroid.entity.ProductItem
 import nya.kitsunyan.foxydroid.service.Connection
 import nya.kitsunyan.foxydroid.service.DownloadService
 import nya.kitsunyan.foxydroid.utility.RxUtils
-import nya.kitsunyan.foxydroid.utility.Utils.updateAll
+import nya.kitsunyan.foxydroid.utility.Utils
+import nya.kitsunyan.foxydroid.utility.extension.android.asSequence
 import nya.kitsunyan.foxydroid.widget.DividerItemDecoration
 import nya.kitsunyan.foxydroid.widget.RecyclerFastScroller
 
@@ -58,6 +60,7 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
   private var order = ProductItem.Order.NAME
   private var currentSearchQuery = ""
   private var currentSection: ProductItem.Section = ProductItem.Section.All
+  private val scope = CoroutineScope(Dispatchers.Default)
   private var currentOrder = ProductItem.Order.NAME
   private var layoutManagerState: Parcelable? = null
   private var recyclerView: RecyclerView? = null
@@ -176,9 +179,10 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
   private fun runUpdate(force: Boolean = false) {
     if (ScreenActivity.runUpdate || force) {
       ScreenActivity.runUpdate = false
-      lifecycleScope.launch(Dispatchers.Default) {
-        updateAll(downloadConnection)
-      }
+      val productsAvailableForUpdate: List<ProductItem> = Database.ProductAdapter
+        .query(installed = true, updates = true, searchQuery = "", section = ProductItem.Section.All, order = ProductItem.Order.NAME, signal = null)
+        .use { it.asSequence().map(Database.ProductAdapter::transformItem).toList() }
+      updateAll(productsAvailableForUpdate)
     }
   }
 
@@ -240,6 +244,36 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
       if (view != null) {
         screenActivity.cursorOwner.attach(this, request)
       }
+    }
+  }
+
+  private fun updateAll(productItems: List<ProductItem>) {
+    scope.launch {
+      productItems.map { productItem ->
+        Triple(
+          productItem.packageName,
+          Database.InstalledAdapter.get(productItem.packageName, null),
+          Database.RepositoryAdapter.get(productItem.repositoryId)
+        )
+      }
+        .filter { pair -> pair.second != null && pair.third != null }
+        .forEach { installedRepository ->
+          run {
+            val packageName = installedRepository.first
+            val installedItem = installedRepository.second
+            val repository = installedRepository.third!!
+
+            val productRepository = Database.ProductAdapter.get(packageName, null)
+              .filter { product -> product.repositoryId == repository.id }
+              .map { product -> Pair(product, repository) }
+            Utils.startUpdate(
+              packageName,
+              installedItem,
+              productRepository,
+              downloadConnection
+            )
+          }
+        }
     }
   }
 }
