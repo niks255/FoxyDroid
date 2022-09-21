@@ -10,6 +10,12 @@
   <string name="always">Всегда</string>
   <string name="anti_features">Анти-функции</string>
   <string name="application">Приложение</string>
+  <plurals name="applications_DESC_FORMAT">
+    <item quantity="one">%d приложение</item>
+    <item quantity="few">%d приложения</item>
+    <item quantity="many">%d приложений</item>
+    <item quantity="other">%d приложений</item>
+  </plurals>
   <string name="application_name" translatable="false">Foxy Droid</string>
   <string name="application_not_found">Приложение не найдено</string>
   <string name="author_email">Email автора</string>
@@ -86,6 +92,8 @@
   <string name="new_updates_available">Доступны новые обновления</string>
   <plurals name="new_updates_DESC_FORMAT">
     <item quantity="one">%d новое обновление.</item>
+    <item quantity="few">%d обновления</item>
+    <item quantity="many">%d обновлений</item>
     <item quantity="other">%d новых обновлений.</item>
   </plurals>
   <string name="no_applications_available">Нет доступных приложений</string>
@@ -164,14 +172,14 @@
   <string name="waiting_to_start_download">Ожидание начала загрузки</string>
   <string name="website">Веб-сайт</string>
   <string name="ok">OK</string>
-    <string name="share">Поделиться</string>
-    <string name="clear_cache">Очистить кэш</string>
+  <string name="share">Поделиться</string>
+  <string name="clear_cache">Очистить кэш</string>
   <string name="clear_cache_toast">Кэш очищен</string>
-    <string name="update_all">Обновить все</string>
-    <string name="black">Чёрная</string>
-    <string name="downloaded">скачано</string>
+  <string name="update_all">Обновить все</string>
+  <string name="black">Чёрная</string>
+  <string name="downloaded">скачано</string>
   <string name="system_black">Системная (черная)</string>
-    <string name="use_legacy_installer">Использовать старый установщик</string>
+  <string name="use_legacy_installer">Использовать старый установщик</string>
   <string name="use_legacy_installer_summary">Включите если испытываете проблемы с установкой приложений</string>
   <string name="root_access_error">Не удалось получить root доступ</string>
   <string name="silent_install">Тихая установка</string>

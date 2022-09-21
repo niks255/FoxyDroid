@@ -43,7 +43,6 @@ import kotlin.math.*
 class DownloadService : ConnectionService<DownloadService.Binder>() {
   companion object {
     private const val ACTION_OPEN = "${BuildConfig.APPLICATION_ID}.intent.action.OPEN"
-    private const val ACTION_INSTALL = "${BuildConfig.APPLICATION_ID}.intent.action.INSTALL"
     private const val ACTION_CANCEL = "${BuildConfig.APPLICATION_ID}.intent.action.CANCEL"
     private val mutableDownloadState = MutableSharedFlow<State.Downloading>()
     private val downloadState = mutableDownloadState.asSharedFlow()
@@ -57,14 +56,6 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
           val packageName = action.substring(ACTION_OPEN.length + 1)
           context.startActivity(Intent(context, MainActivity::class.java)
             .setAction(Intent.ACTION_VIEW).setData(Uri.parse("package:$packageName"))
-            .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        }
-        action.startsWith("$ACTION_INSTALL.") -> {
-          val packageName = action.substring(ACTION_INSTALL.length + 1)
-          val cacheFileName = intent.getStringExtra(EXTRA_CACHE_FILE_NAME)
-          context.startActivity(Intent(context, MainActivity::class.java)
-            .setAction(MainActivity.ACTION_INSTALL).setData(Uri.parse("package:$packageName"))
-            .putExtra(EXTRA_CACHE_FILE_NAME, cacheFileName)
             .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
       }
@@ -94,6 +85,20 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
     val packageName: String, val name: String, val release: Release,
     val url: String, val authentication: String,
   ) {
+    override fun equals(other: Any?): Boolean {
+      if (other == null) return false
+      if (this === other) return true
+      if (other !is Task) return false
+      if (packageName != other.packageName || name != other.name ||
+          release != other.release || url != other.url ||
+          authentication != other.authentication) return false
+      return true
+    }
+
+    override fun hashCode(): Int = packageName.hashCode() +
+                                   name.hashCode() + release.hashCode() +
+                                   url.hashCode() + authentication.hashCode()
+
     val notificationTag: String
       get() = "download-$packageName"
   }
@@ -115,17 +120,20 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
         release.getDownloadUrl(repository),
         repository.authentication
       )
-      if (Cache.getReleaseFile(this@DownloadService, release.cacheFileName).exists()) {
-        publishSuccess(task)
-      } else {
-        cancelTasks(packageName)
-        cancelCurrentTask(packageName)
-        notificationManager.cancel(task.notificationTag, NOTIFICATION_ID_DOWNLOADING)
-        tasks += task
-        if (currentTask == null) {
-          handleDownload()
+
+      if (currentTask?.task != task && tasks.find { it == task } == null) {
+        if (Cache.getReleaseFile(this@DownloadService, release.cacheFileName).exists()) {
+          publishSuccess(task)
         } else {
-          scope.launch { mutableStateSubject.emit(State.Pending(packageName, name)) }
+          cancelTasks(packageName)
+          cancelCurrentTask(packageName)
+          notificationManager.cancel(task.notificationTag, NOTIFICATION_ID_DOWNLOADING)
+          tasks += task
+          if (currentTask == null) {
+            handleDownload()
+          } else {
+            scope.launch { mutableStateSubject.emit(State.Pending(packageName, name)) }
+          }
         }
       }
     }

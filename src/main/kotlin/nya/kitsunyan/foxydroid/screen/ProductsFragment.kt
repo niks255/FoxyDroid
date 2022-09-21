@@ -1,14 +1,14 @@
 package nya.kitsunyan.foxydroid.screen
 
 import android.database.Cursor
-import android.graphics.Color
 import android.os.Bundle
 import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.Toast
+import android.widget.RelativeLayout
+import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -26,7 +26,9 @@ import nya.kitsunyan.foxydroid.service.Connection
 import nya.kitsunyan.foxydroid.service.DownloadService
 import nya.kitsunyan.foxydroid.utility.RxUtils
 import nya.kitsunyan.foxydroid.utility.Utils
+import nya.kitsunyan.foxydroid.utility.extension.android.Android
 import nya.kitsunyan.foxydroid.utility.extension.android.asSequence
+import nya.kitsunyan.foxydroid.utility.extension.resources.getColorFromAttr
 import nya.kitsunyan.foxydroid.widget.DividerItemDecoration
 import nya.kitsunyan.foxydroid.widget.RecyclerFastScroller
 
@@ -64,7 +66,8 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
   private var currentOrder = ProductItem.Order.NAME
   private var layoutManagerState: Parcelable? = null
   private var recyclerView: RecyclerView? = null
-  private var updateAllButton: Button? = null
+  private var updatesHeader: TextView? = null
+  private var updatesLayout: RelativeLayout? = null
   private var repositoriesDisposable: Disposable? = null
   private val downloadConnection = Connection(DownloadService::class.java, onBind = { _, binder ->
     lifecycleScope.launch {
@@ -104,15 +107,6 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
         adapter.setStatus(state?.packageName, status)
       }
     }
-
-    if (state is DownloadService.State.Success && isResumed) {
-        val text = state.name + " " + getString(R.string.downloaded)
-        Toast.makeText(this.context, text, Toast.LENGTH_SHORT).show()
-    }
-
-    updateAllButton?.isEnabled = state is DownloadService.State.Error ||
-                                 state is DownloadService.State.Success
-
   }
 
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -121,7 +115,8 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
     val layout = inflater.inflate(R.layout.products, container, false)
     val recyclerView: RecyclerView = layout.findViewById(R.id.products_recycler_view)
     val updateAllButton: Button = layout.findViewById(R.id.update_all)
-    updateAllButton.setTextColor(Color.WHITE)
+    val updatesHeader: TextView = layout.findViewById(R.id.updates)
+    val updatesLayout: RelativeLayout = layout.findViewById(R.id.updates_layout)
 
     recyclerView.setHasFixedSize(true)
     recyclerView.itemAnimator = null
@@ -132,9 +127,16 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
     recyclerView.addItemDecoration(DividerItemDecoration(recyclerView.context, adapter::configureDivider))
     RecyclerFastScroller(recyclerView)
 
+    if (Android.sdk(22)) {
+      updateAllButton.setTextColor(
+        updateAllButton.context.getColorFromAttr(android.R.attr.colorBackground))
+    }
+    updateAllButton.backgroundTintList = updateAllButton.context.
+                                                      getColorFromAttr(android.R.attr.colorAccent)
     updateAllButton.setOnClickListener { runUpdate(true) }
     this.recyclerView = recyclerView
-    this.updateAllButton = updateAllButton
+    this.updatesLayout = updatesLayout
+    this.updatesHeader = updatesHeader
     return layout
   }
 
@@ -161,8 +163,8 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
     super.onDestroyView()
 
     recyclerView = null
-
-    updateAllButton = null
+    updatesHeader = null
+    updatesLayout = null
     downloadConnection.unbind(requireContext())
 
     screenActivity.cursorOwner.detach(this)
@@ -184,10 +186,16 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
     if (ScreenActivity.runUpdate || force) {
       ScreenActivity.runUpdate = false
       val productsAvailableForUpdate: List<ProductItem> = Database.ProductAdapter
-        .query(installed = true, updates = true, searchQuery = "", section = ProductItem.Section.All, order = ProductItem.Order.NAME, signal = null)
+        .query(
+          installed = true,
+          updates = true,
+          searchQuery = "",
+          section = ProductItem.Section.All,
+          order = ProductItem.Order.NAME,
+          signal = null
+        )
         .use { it.asSequence().map(Database.ProductAdapter::transformItem).toList() }
       if (productsAvailableForUpdate.isNotEmpty()) {
-        updateAllButton?.isEnabled = false
         updateAll(productsAvailableForUpdate)
       }
     }
@@ -207,9 +215,10 @@ class ProductsFragment(): ScreenFragment(), CursorOwner.Callback {
       }
       if (source == Source.UPDATES && itemCount > 0 &&
           getItemEnumViewType(0) == ProductsAdapter.ViewType.PRODUCT) {
-        updateAllButton?.visibility = View.VISIBLE
+        updatesHeader?.text = resources.getQuantityString(R.plurals.applications_DESC_FORMAT, itemCount, itemCount)
+        updatesLayout?.visibility = View.VISIBLE
       } else {
-        updateAllButton?.visibility = View.GONE
+        updatesLayout?.visibility = View.GONE
       }
     }
 
