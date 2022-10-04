@@ -13,7 +13,6 @@ import android.view.WindowManager
 import android.widget.*
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
-import com.topjohnwu.superuser.Shell
 import io.reactivex.rxjava3.disposables.Disposable
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.content.Preferences
@@ -25,11 +24,6 @@ class PreferencesFragment: ScreenFragment() {
 
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
     return inflater.inflate(R.layout.fragment, container, false)
-  }
-
-  override fun onResume() {
-    super.onResume()
-    updatePreference(Preferences.Key.SilentInstall)
   }
 
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -86,9 +80,7 @@ class PreferencesFragment: ScreenFragment() {
       }
       addSwitch(Preferences.Key.UseLegacyInstaller, getString(R.string.use_legacy_installer),
         getString(R.string.use_legacy_installer_summary))
-      addSwitch(Preferences.Key.SilentInstall, getString(R.string.silent_install),
-        getString(R.string.silent_install_summary))
-      addSwitch(Preferences.Key.IncompatibleVersions, getString(R.string.incompatible_versions),
+        addSwitch(Preferences.Key.IncompatibleVersions, getString(R.string.incompatible_versions),
         getString(R.string.incompatible_versions_summary))
     }
 
@@ -115,15 +107,6 @@ class PreferencesFragment: ScreenFragment() {
       }
       preferences[Preferences.Key.ProxyHost]?.setEnabled(enabled)
       preferences[Preferences.Key.ProxyPort]?.setEnabled(enabled)
-    }
-
-    if (key == Preferences.Key.SilentInstall) {
-       if (Preferences[Preferences.Key.SilentInstall]) {
-         if (!Shell.getShell().isRoot) {
-           Preferences[Preferences.Key.SilentInstall] = false
-           Toast.makeText(context, R.string.root_access_error, Toast.LENGTH_LONG).show()
-         }
-       }
     }
 
     if (key == Preferences.Key.Theme) {

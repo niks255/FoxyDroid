@@ -13,7 +13,6 @@ import android.widget.Toolbar
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
-import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.launch
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.content.Preferences
@@ -89,13 +88,6 @@ abstract class ScreenActivity: FragmentActivity() {
     } else {
       cursorOwner = supportFragmentManager
         .findFragmentByTag(CursorOwner::class.java.name) as CursorOwner
-    }
-
-    if (Preferences[Preferences.Key.SilentInstall]) {
-      if (!Shell.getShell().isRoot) {
-        Preferences[Preferences.Key.SilentInstall] = false
-        Toast.makeText(this@ScreenActivity, R.string.root_access_error, Toast.LENGTH_LONG).show()
-      }
     }
 
     savedInstanceState?.getParcelableArrayList<FragmentStackItem>(STATE_FRAGMENT_STACK)

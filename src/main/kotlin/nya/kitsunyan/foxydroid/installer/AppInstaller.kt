@@ -17,9 +17,7 @@ abstract class AppInstaller {
                         INSTANCE = object : AppInstaller() {
                             override val defaultInstaller: BaseInstaller
                                 get() {
-                                    return if (Utils.rootInstallerEnabled) {
-                                        RootInstaller(it)
-                                    } else if (Preferences[Preferences.Key.UseLegacyInstaller]) {
+                                    return if (Preferences[Preferences.Key.UseLegacyInstaller]) {
                                         LegacyInstaller(it)
                                     } else {
                                         SessionInstaller(it)

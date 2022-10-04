@@ -331,7 +331,7 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
       Unit
     }
 
-    if (state is DownloadService.State.Success && isResumed && !Utils.rootInstallerEnabled) {
+    if (state is DownloadService.State.Success && isResumed) {
       lifecycleScope.launch {
         AppInstaller.getInstance(context)?.defaultInstaller?.install(state.release.cacheFileName)
       }

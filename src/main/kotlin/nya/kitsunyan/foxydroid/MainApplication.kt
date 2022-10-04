@@ -77,8 +77,7 @@ class MainApplication: Application() {
               } else {
                 Database.InstalledAdapter.delete(packageName)
               }
-              if (Preferences[Preferences.Key.UseLegacyInstaller] ||
-                  Preferences[Preferences.Key.SilentInstall]) {
+              if (Preferences[Preferences.Key.UseLegacyInstaller]) {
                 val notificationTag = "download-$packageName"
                 notificationManager.cancel(notificationTag, NOTIFICATION_ID_DOWNLOADING)
               }
