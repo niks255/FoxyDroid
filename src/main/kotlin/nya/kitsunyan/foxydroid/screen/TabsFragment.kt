@@ -160,6 +160,7 @@ class TabsFragment: ScreenFragment() {
               .add(sortOrder.order.titleResId)
               .setOnMenuItemClickListener {
                 Preferences[Preferences.Key.SortOrder] = sortOrder
+                updateOrder()
                 true
               } }
           menu.setGroupCheckable(0, true, true)

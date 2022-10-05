@@ -80,7 +80,7 @@ class PreferencesFragment: ScreenFragment() {
       }
       addSwitch(Preferences.Key.UseLegacyInstaller, getString(R.string.use_legacy_installer),
         getString(R.string.use_legacy_installer_summary))
-        addSwitch(Preferences.Key.IncompatibleVersions, getString(R.string.incompatible_versions),
+      addSwitch(Preferences.Key.IncompatibleVersions, getString(R.string.incompatible_versions),
         getString(R.string.incompatible_versions_summary))
     }
 
@@ -153,7 +153,10 @@ class PreferencesFragment: ScreenFragment() {
   private fun LinearLayout.addSwitch(key: Preferences.Key<Boolean>, title: String, summary: String) {
     val preference = addPreference(key, title, { summary }, null)
     preference.check.visibility = View.VISIBLE
-    preference.view.setOnClickListener { Preferences[key] = !Preferences[key] }
+    preference.view.setOnClickListener {
+      Preferences[key] = !Preferences[key]
+      updatePreference(key)
+    }
     preference.setCallback { preference.check.isChecked = Preferences[key] }
   }
 
