@@ -180,7 +180,10 @@ class PreferencesFragment: ScreenFragment() {
         .setView(scroll)
         .setPositiveButton(R.string.ok) { _, _ ->
           val value = stringToValue(edit.text.toString()) ?: key.default.value
-          post { Preferences[key] = value }
+          post {
+            Preferences[key] = value
+            updatePreference(key)
+          }
         }
         .setNegativeButton(R.string.cancel, null)
         .create()
@@ -216,7 +219,10 @@ class PreferencesFragment: ScreenFragment() {
         .setSingleChoiceItems(values.map(valueToString).toTypedArray(),
           values.indexOf(Preferences[key])) { dialog, which ->
           dialog.dismiss()
-          post { Preferences[key] = values[which] }
+          post {
+            Preferences[key] = values[which]
+            updatePreference(key)
+          }
         }
         .setNegativeButton(R.string.cancel, null)
         .create()
