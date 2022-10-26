@@ -90,7 +90,7 @@ class PreferencesFragment: ScreenFragment() {
 
   override fun onDestroyView() {
     super.onDestroyView()
-
+    Preferences.init(requireContext())
     preferences.clear()
     disposable?.dispose()
     disposable = null
