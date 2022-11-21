@@ -178,13 +178,12 @@ class ProductsAdapter(private val onClick: (ProductItem) -> Unit):
               setTextColor(holder.status.context.getColorFromAttr(android.R.attr.colorBackground))
               background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, null).apply {
                 color = holder.status.context.getColorFromAttr(android.R.attr.colorAccent)
-                cornerRadius = holder.status.resources.sizeScaled(2).toFloat()
+                cornerRadius = holder.status.resources.sizeScaled(10).toFloat()
               }
             }
           } else {
             text = productItem.installedVersion.nullIfEmpty() ?: productItem.version
             if (background != null) {
-              setPadding(0, 0, 0, 0)
               setTextColor(holder.status.context.getColorFromAttr(android.R.attr.textColorPrimary))
               background = null
             }
