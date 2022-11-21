@@ -473,7 +473,7 @@ class ProductAdapter(private val callbacks: Callbacks, private val columns: Int)
       status.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, null).apply {
         setStatusActive = { active -> color = itemView.context.getColorFromAttr(if (active)
           android.R.attr.colorAccent else android.R.attr.textColorSecondary) }
-        cornerRadius = itemView.resources.sizeScaled(2).toFloat()
+        cornerRadius = itemView.resources.sizeScaled(10).toFloat()
       }
     }
   }
