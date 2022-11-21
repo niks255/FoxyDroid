@@ -221,7 +221,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
   private fun showNotificationInstall(task: Task) {
     val intent = Intent(this, MainActivity::class.java)
       .setAction(MainActivity.ACTION_INSTALL)
-      .setData(Uri.parse("package:$task.packageName"))
+      .setData(Uri.parse("package:${task.packageName}"))
       .putExtra(EXTRA_CACHE_FILE_NAME, task.release.cacheFileName)
       .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     val resultPendingIntent: PendingIntent? = TaskStackBuilder.create(this).run {

@@ -213,31 +213,36 @@ abstract class ScreenActivity: FragmentActivity() {
         val tabsFragment = currentFragment as TabsFragment
         tabsFragment.selectInstalled()
       }
-      is SpecialIntent.Install -> {
-        val packageName = specialIntent.packageName
-        if (!packageName.isNullOrEmpty()) {
-          lifecycleScope.launch {
-            specialIntent.cacheFileName?.let {
-              AppInstaller.getInstance(this@ScreenActivity)
-                ?.defaultInstaller?.install(packageName, it)
-            }
+      is SpecialIntent.Install ->
+              openAppPage(specialIntent.packageName, specialIntent.cacheFileName, true)
+    }::class
+  }
+
+  private fun openAppPage(packageName: String?,
+                          cacheFileName: String? = null,
+                          runInstall: Boolean = false) {
+    if (!packageName.isNullOrEmpty()) {
+      val fragment = currentFragment
+      if (fragment !is ProductFragment || fragment.packageName != packageName) {
+        pushFragment(ProductFragment(packageName))
+      }
+      if (runInstall) {
+        lifecycleScope.launch {
+          cacheFileName?.let {
+            AppInstaller.getInstance(this@ScreenActivity)
+              ?.defaultInstaller?.install(packageName, it)
           }
         }
         Unit
       }
-    }::class
+    }
   }
 
   open fun handleIntent(intent: Intent?) {
     when (intent?.action) {
       Intent.ACTION_VIEW -> {
         val packageName = intent.packageName
-        if (!packageName.isNullOrEmpty()) {
-          val fragment = currentFragment
-          if (fragment !is ProductFragment || fragment.packageName != packageName) {
-            pushFragment(ProductFragment(packageName))
-          }
-        }
+        openAppPage(packageName)
       }
     }
   }
