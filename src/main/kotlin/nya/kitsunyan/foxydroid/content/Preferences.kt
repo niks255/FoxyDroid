@@ -21,7 +21,7 @@ object Preferences : OnSharedPreferenceChangeListener {
   val subject = mutableSubject.asSharedFlow()
 
   private val keys = sequenceOf(Key.AutoSync, Key.UseLegacyInstaller, Key.IncompatibleVersions, Key.ProxyHost, Key.ProxyPort, Key.ProxyType,
-    Key.SortOrder, Key.Theme, Key.UpdateNotify, Key.UpdateUnstable).map { Pair(it.name, it) }.toMap()
+    Key.SortOrder, Key.Theme, Key.UpdateNotify, Key.UpdateUnstable, Key.BatteryOptimization).map { Pair(it.name, it) }.toMap()
 
   fun init(context: Context) {
     preferences = context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)
@@ -99,7 +99,9 @@ object Preferences : OnSharedPreferenceChangeListener {
     object SortOrder: Key<Preferences.SortOrder>("sort_order", Value.EnumerationValue(Preferences.SortOrder.Update))
     object Theme: Key<Preferences.Theme>("theme", Value.EnumerationValue(if (Android.sdk(29))
       Preferences.Theme.System else Preferences.Theme.Light))
-    object UpdateNotify: Key<Boolean>("update_notify", Value.BooleanValue(true))
+    object BatteryOptimizationAlert: Key<Boolean>("battery_optimization_alert", Value.BooleanValue(false))
+    object BatteryOptimization: Key<Boolean>("battery_optimization", Value.BooleanValue(true))
+    object UpdateNotify: Key<Boolean>("update_notify", Value.BooleanValue(false))
     object UpdateUnstable: Key<Boolean>("update_unstable", Value.BooleanValue(false))
   }
 

@@ -1,9 +1,15 @@
 package nya.kitsunyan.foxydroid.screen
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build.VERSION_CODES
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.text.InputFilter
 import android.text.InputType
 import android.view.LayoutInflater
@@ -11,12 +17,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.*
+import androidx.annotation.RequiresApi
+import androidx.core.view.isGone
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import nya.kitsunyan.foxydroid.BuildConfig
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.content.Preferences
+import nya.kitsunyan.foxydroid.utility.extension.android.Android
 import nya.kitsunyan.foxydroid.utility.extension.resources.*
 
 class PreferencesFragment: ScreenFragment() {
@@ -24,6 +34,11 @@ class PreferencesFragment: ScreenFragment() {
 
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
     return inflater.inflate(R.layout.fragment, container, false)
+  }
+
+  override fun onResume() {
+    super.onResume()
+    updatePreference(null)
   }
 
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -56,6 +71,12 @@ class PreferencesFragment: ScreenFragment() {
         getString(R.string.notify_about_updates_summary))
       addSwitch(Preferences.Key.UpdateUnstable, getString(R.string.unstable_updates),
         getString(R.string.unstable_updates_summary))
+      if (Android.sdk(VERSION_CODES.M)) {
+        val preference = addPreference(Preferences.Key.BatteryOptimization,
+          getString(R.string.disable_battery_optimization_title),
+          { getString(R.string.disable_battery_optimization_summary) }, null)
+        preference.view.setOnClickListener { requestIgnoreBatteryOptimizations() }
+      }
     }
     preferences.addCategory(getString(R.string.proxy)) {
       addEnumeration(Preferences.Key.ProxyType, getString(R.string.proxy_type)) {
@@ -78,6 +99,7 @@ class PreferencesFragment: ScreenFragment() {
           is Preferences.Theme.Black -> getString(R.string.black)
         }
       }
+
       addSwitch(Preferences.Key.UseLegacyInstaller, getString(R.string.use_legacy_installer),
         getString(R.string.use_legacy_installer_summary))
       addSwitch(Preferences.Key.IncompatibleVersions, getString(R.string.incompatible_versions),
@@ -88,6 +110,15 @@ class PreferencesFragment: ScreenFragment() {
     lifecycleScope.launch {
       Preferences.subject.collect { updatePreference(it) }
     }
+  }
+
+  @RequiresApi(VERSION_CODES.M)
+  @SuppressLint("BatteryLife")
+  private fun requestIgnoreBatteryOptimizations() {
+    val intent = Intent()
+    intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+    intent.data = Uri.parse("package:${BuildConfig.APPLICATION_ID}")
+    this.startActivity(intent)
   }
 
   override fun onDestroyView() {
@@ -106,6 +137,11 @@ class PreferencesFragment: ScreenFragment() {
       }
       preferences[Preferences.Key.ProxyHost]?.setEnabled(enabled)
       preferences[Preferences.Key.ProxyPort]?.setEnabled(enabled)
+      if (Android.sdk(VERSION_CODES.M)) {
+        val powerManager = requireContext().getSystemService(Context.POWER_SERVICE) as PowerManager
+        preferences[Preferences.Key.BatteryOptimization]?.view?.isGone =
+                            powerManager.isIgnoringBatteryOptimizations(BuildConfig.APPLICATION_ID)
+      }
     }
 
     if (key == Preferences.Key.Theme) {
@@ -140,7 +176,7 @@ class PreferencesFragment: ScreenFragment() {
   }
 
   private fun <T> LinearLayout.addPreference(key: Preferences.Key<T>, title: String,
-    summaryProvider: () -> String, dialogProvider: ((Context) -> AlertDialog)?): Preference<T> {
+                                             summaryProvider: () -> String, dialogProvider: ((Context) -> AlertDialog)?): Preference<T> {
     if (childCount > 0 && getChildAt(childCount - 1) !is TextView) {
       addDivider(false)
     }
@@ -157,7 +193,7 @@ class PreferencesFragment: ScreenFragment() {
   }
 
   private fun <T> LinearLayout.addEdit(key: Preferences.Key<T>, title: String, valueToString: (T) -> String,
-    stringToValue: (String) -> T?, configureEdit: (EditText) -> Unit) {
+                                       stringToValue: (String) -> T?, configureEdit: (EditText) -> Unit) {
     addPreference(key, title, { valueToString(Preferences[key]) }) {
       val scroll = ScrollView(it)
       scroll.resources.sizeScaled(20).let { scroll.setPadding(it, 0, it, 0) }
@@ -196,7 +232,7 @@ class PreferencesFragment: ScreenFragment() {
       if (range != null) {
         it.filters = arrayOf(InputFilter { source, start, end, dest, dstart, dend ->
           val value = (dest.substring(0, dstart) + source.substring(start, end) +
-            dest.substring(dend, dest.length)).toIntOrNull()
+                  dest.substring(dend, dest.length)).toIntOrNull()
           if (value != null && value in range) null else ""
         })
       }
@@ -204,7 +240,7 @@ class PreferencesFragment: ScreenFragment() {
   }
 
   private fun <T: Preferences.Enumeration<T>> LinearLayout
-    .addEnumeration(key: Preferences.Key<T>, title: String, valueToString: (T) -> String) {
+          .addEnumeration(key: Preferences.Key<T>, title: String, valueToString: (T) -> String) {
     addPreference(key, title, { valueToString(Preferences[key]) }) {
       val values = key.default.value.values
       AlertDialog.Builder(it)
@@ -220,8 +256,8 @@ class PreferencesFragment: ScreenFragment() {
   }
 
   private class Preference<T>(private val key: Preferences.Key<T>,
-    fragment: Fragment, parent: ViewGroup, titleText: String,
-    private val summaryProvider: () -> String, private val dialogProvider: ((Context) -> AlertDialog)?) {
+                              fragment: Fragment, parent: ViewGroup, titleText: String,
+                              private val summaryProvider: () -> String, private val dialogProvider: ((Context) -> AlertDialog)?) {
     val view = parent.inflate(R.layout.preference_item)
     val title = view.findViewById<TextView>(R.id.title)!!
     val summary = view.findViewById<TextView>(R.id.summary)!!

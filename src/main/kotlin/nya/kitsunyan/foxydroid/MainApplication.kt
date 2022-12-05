@@ -1,14 +1,12 @@
 package nya.kitsunyan.foxydroid
 
+import android.R
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.app.Application
 import android.app.job.JobInfo
 import android.app.job.JobScheduler
-import android.content.BroadcastReceiver
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.content.*
 import android.content.pm.PackageInfo
 import com.squareup.picasso.OkHttp3Downloader
 import com.squareup.picasso.Picasso
@@ -29,6 +27,7 @@ import nya.kitsunyan.foxydroid.utility.Utils
 import nya.kitsunyan.foxydroid.utility.extension.android.*
 import java.net.InetSocketAddress
 import java.net.Proxy
+
 
 @Suppress("unused")
 class MainApplication: Application() {
@@ -80,7 +79,7 @@ class MainApplication: Application() {
               } else {
                 Database.InstalledAdapter.delete(packageName)
               }
-              if (Preferences[Preferences.Key.UseLegacyInstaller]) {
+              if (intent.action == Intent.ACTION_PACKAGE_ADDED) {
                 val notificationTag = "download-$packageName"
                 notificationManager.cancel(notificationTag, NOTIFICATION_ID_DOWNLOADING)
               }

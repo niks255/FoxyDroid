@@ -1,14 +1,19 @@
 package nya.kitsunyan.foxydroid.screen
 
+import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build.VERSION_CODES
 import android.os.Bundle
 import android.os.Parcel
+import android.os.PowerManager
+import android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
-import android.widget.Toast
 import android.widget.Toolbar
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -20,8 +25,10 @@ import nya.kitsunyan.foxydroid.database.CursorOwner
 import nya.kitsunyan.foxydroid.installer.AppInstaller
 import nya.kitsunyan.foxydroid.utility.KParcelable
 import nya.kitsunyan.foxydroid.utility.Utils
+import nya.kitsunyan.foxydroid.utility.extension.android.Android
 import nya.kitsunyan.foxydroid.utility.extension.resources.getDrawableFromAttr
 import nya.kitsunyan.foxydroid.utility.extension.text.nullIfEmpty
+
 
 abstract class ScreenActivity: FragmentActivity() {
   companion object {
@@ -96,6 +103,27 @@ abstract class ScreenActivity: FragmentActivity() {
       replaceFragment(TabsFragment(), null)
       if ((intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
         handleIntent(intent)
+      }
+    }
+
+    @SuppressLint("BatteryLife")
+    if (Android.sdk(VERSION_CODES.M) && !Preferences[Preferences.Key.BatteryOptimizationAlert]) {
+      val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+      if (!powerManager.isIgnoringBatteryOptimizations(this.packageName)) {
+        AlertDialog.Builder(this)
+          .setMessage(getString(R.string.battery_optimization_alert))
+          .setNeutralButton(
+            getString(R.string.ok)
+          ) { dialog, _ ->
+            Preferences[Preferences.Key.BatteryOptimizationAlert] = true
+            val intent = Intent()
+            intent.action = ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+            intent.data = Uri.parse("package:${this.packageName}")
+            this.startActivity(intent)
+            dialog.dismiss()
+          }
+          .setIcon(android.R.drawable.ic_dialog_alert)
+          .show()
       }
     }
   }
@@ -213,28 +241,25 @@ abstract class ScreenActivity: FragmentActivity() {
         val tabsFragment = currentFragment as TabsFragment
         tabsFragment.selectInstalled()
       }
-      is SpecialIntent.Install ->
-              openAppPage(specialIntent.packageName, specialIntent.cacheFileName, true)
+      is SpecialIntent.Install -> openAppPage(specialIntent.packageName,
+                                              specialIntent.cacheFileName)
     }::class
   }
 
   private fun openAppPage(packageName: String?,
-                          cacheFileName: String? = null,
-                          runInstall: Boolean = false) {
+                          cacheFileName: String? = null) {
     if (!packageName.isNullOrEmpty()) {
       val fragment = currentFragment
       if (fragment !is ProductFragment || fragment.packageName != packageName) {
         pushFragment(ProductFragment(packageName))
       }
-      if (runInstall) {
-        lifecycleScope.launch {
-          cacheFileName?.let {
-            AppInstaller.getInstance(this@ScreenActivity)
-              ?.defaultInstaller?.install(packageName, it)
-          }
+      lifecycleScope.launch {
+        cacheFileName?.let {
+          AppInstaller.getInstance(this@ScreenActivity)
+            ?.defaultInstaller?.install(packageName, it)
         }
-        Unit
       }
+      Unit
     }
   }
 
