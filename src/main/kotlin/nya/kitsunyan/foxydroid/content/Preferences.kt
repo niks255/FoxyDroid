@@ -2,29 +2,39 @@ package nya.kitsunyan.foxydroid.content
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.content.res.Configuration
-import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.subjects.PublishSubject
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.entity.ProductItem
 import nya.kitsunyan.foxydroid.utility.extension.android.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
 import java.net.Proxy
 
-object Preferences {
+object Preferences : OnSharedPreferenceChangeListener {
   private lateinit var preferences: SharedPreferences
 
-  private val subject = PublishSubject.create<Key<*>>()
+  private val mutableSubject = MutableSharedFlow<Key<*>>()
+  val subject = mutableSubject.asSharedFlow()
 
   private val keys = sequenceOf(Key.AutoSync, Key.UseLegacyInstaller, Key.IncompatibleVersions, Key.ProxyHost, Key.ProxyPort, Key.ProxyType,
     Key.SortOrder, Key.Theme, Key.UpdateNotify, Key.UpdateUnstable).map { Pair(it.name, it) }.toMap()
 
   fun init(context: Context) {
     preferences = context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)
-    preferences.registerOnSharedPreferenceChangeListener { _, keyString -> keys[keyString]?.let(subject::onNext) }
+    preferences.registerOnSharedPreferenceChangeListener(this)
   }
 
-  val observable: Observable<Key<*>>
-    get() = subject
+  override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+    CoroutineScope(Dispatchers.Default).launch {
+      keys[key]?.let {
+        mutableSubject.emit(it)
+      }
+    }
+  }
 
   sealed class Value<T> {
     abstract val value: T

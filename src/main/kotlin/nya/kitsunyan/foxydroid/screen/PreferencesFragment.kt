@@ -13,14 +13,14 @@ import android.view.WindowManager
 import android.widget.*
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
-import io.reactivex.rxjava3.disposables.Disposable
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.content.Preferences
 import nya.kitsunyan.foxydroid.utility.extension.resources.*
 
 class PreferencesFragment: ScreenFragment() {
   private val preferences = mutableMapOf<Preferences.Key<*>, Preference<*>>()
-  private var disposable: Disposable? = null
 
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
     return inflater.inflate(R.layout.fragment, container, false)
@@ -84,16 +84,15 @@ class PreferencesFragment: ScreenFragment() {
         getString(R.string.incompatible_versions_summary))
     }
 
-    disposable = Preferences.observable.subscribe(this::updatePreference)
     updatePreference(null)
+    lifecycleScope.launch {
+      Preferences.subject.collect { updatePreference(it) }
+    }
   }
 
   override fun onDestroyView() {
     super.onDestroyView()
-    Preferences.init(requireContext())
     preferences.clear()
-    disposable?.dispose()
-    disposable = null
   }
 
   private fun updatePreference(key: Preferences.Key<*>?) {
@@ -153,10 +152,7 @@ class PreferencesFragment: ScreenFragment() {
   private fun LinearLayout.addSwitch(key: Preferences.Key<Boolean>, title: String, summary: String) {
     val preference = addPreference(key, title, { summary }, null)
     preference.check.visibility = View.VISIBLE
-    preference.view.setOnClickListener {
-      Preferences[key] = !Preferences[key]
-      updatePreference(key)
-    }
+    preference.view.setOnClickListener { Preferences[key] = !Preferences[key] }
     preference.setCallback { preference.check.isChecked = Preferences[key] }
   }
 
@@ -180,10 +176,7 @@ class PreferencesFragment: ScreenFragment() {
         .setView(scroll)
         .setPositiveButton(R.string.ok) { _, _ ->
           val value = stringToValue(edit.text.toString()) ?: key.default.value
-          post {
-            Preferences[key] = value
-            updatePreference(key)
-          }
+          post { Preferences[key] = value }
         }
         .setNegativeButton(R.string.cancel, null)
         .create()
@@ -219,10 +212,7 @@ class PreferencesFragment: ScreenFragment() {
         .setSingleChoiceItems(values.map(valueToString).toTypedArray(),
           values.indexOf(Preferences[key])) { dialog, which ->
           dialog.dismiss()
-          post {
-            Preferences[key] = values[which]
-            updatePreference(key)
-          }
+          post { Preferences[key] = values[which] }
         }
         .setNegativeButton(R.string.cancel, null)
         .create()

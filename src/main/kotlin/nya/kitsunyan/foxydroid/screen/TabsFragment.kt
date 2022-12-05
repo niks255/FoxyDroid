@@ -24,6 +24,7 @@ import android.widget.TextView
 import android.widget.Toast
 import android.widget.Toolbar
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -32,6 +33,9 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.content.Preferences
 import nya.kitsunyan.foxydroid.database.Database
@@ -160,7 +164,6 @@ class TabsFragment: ScreenFragment() {
               .add(sortOrder.order.titleResId)
               .setOnMenuItemClickListener {
                 Preferences[Preferences.Key.SortOrder] = sortOrder
-                updateOrder()
                 true
               } }
           menu.setGroupCheckable(0, true, true)
@@ -231,9 +234,9 @@ class TabsFragment: ScreenFragment() {
       .any { it !is ProductItem.Section.All } && !showSections }
 
     updateOrder()
-    sortOrderDisposable = Preferences.observable.subscribe {
-      if (it == Preferences.Key.SortOrder) {
-        updateOrder()
+    lifecycleScope.launch {
+      Preferences.subject.collect {
+        if (it == Preferences.Key.SortOrder) updateOrder()
       }
     }
 
