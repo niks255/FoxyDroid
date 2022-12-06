@@ -93,6 +93,7 @@ object Preferences : OnSharedPreferenceChangeListener {
     object AutoSync: Key<Preferences.AutoSync>("auto_sync", Value.EnumerationValue(Preferences.AutoSync.Wifi))
     object IncompatibleVersions: Key<Boolean>("incompatible_versions", Value.BooleanValue(false))
     object UseLegacyInstaller: Key<Boolean>("legacy_installer", Value.BooleanValue(false))
+    object IgnoreBatteryOptimizationUnsupported: Key<Boolean>("battery_opt_unsupported", Value.BooleanValue(false))
     object ProxyHost: Key<String>("proxy_host", Value.StringValue("localhost"))
     object ProxyPort: Key<Int>("proxy_port", Value.IntValue(9050))
     object ProxyType: Key<Preferences.ProxyType>("proxy_type", Value.EnumerationValue(Preferences.ProxyType.Direct))

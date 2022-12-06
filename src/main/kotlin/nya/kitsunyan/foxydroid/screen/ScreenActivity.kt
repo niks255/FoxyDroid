@@ -2,7 +2,9 @@ package nya.kitsunyan.foxydroid.screen
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.net.Uri
 import android.os.Build.VERSION_CODES
@@ -14,6 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
+import android.widget.Toast
 import android.widget.Toolbar
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -111,18 +114,26 @@ abstract class ScreenActivity: FragmentActivity() {
       val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
       if (!powerManager.isIgnoringBatteryOptimizations(this.packageName)) {
         AlertDialog.Builder(this)
-          .setMessage(getString(R.string.battery_optimization_alert))
-          .setNeutralButton(
-            getString(R.string.ok)
-          ) { dialog, _ ->
+          .setTitle(R.string.ignore_battery_optimization_title)
+          .setMessage(R.string.ignore_battery_optimization_message)
+          .setPositiveButton(R.string.dialog_approve) { _, _ ->
+            val intent = Intent(ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            intent.data = Uri.parse("package:" + this.packageName)
+            try {
+              startActivity(intent)
+            } catch (e: ActivityNotFoundException) {
+              Toast.makeText(
+                this,
+                R.string.ignore_battery_optimization_not_supported,
+                Toast.LENGTH_LONG
+              ).show()
+              Preferences[Preferences.Key.IgnoreBatteryOptimizationUnsupported] = true
+            }
             Preferences[Preferences.Key.BatteryOptimizationAlert] = true
-            val intent = Intent()
-            intent.action = ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-            intent.data = Uri.parse("package:${this.packageName}")
-            this.startActivity(intent)
-            dialog.dismiss()
           }
-          .setIcon(android.R.drawable.ic_dialog_alert)
+          .setNeutralButton(R.string.dialog_refuse) { _: DialogInterface?, _: Int ->
+            Preferences[Preferences.Key.BatteryOptimizationAlert] = true
+          }
           .show()
       }
     }

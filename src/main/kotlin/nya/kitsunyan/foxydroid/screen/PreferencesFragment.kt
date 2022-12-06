@@ -3,6 +3,7 @@ package nya.kitsunyan.foxydroid.screen
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.Dialog
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -71,7 +72,7 @@ class PreferencesFragment: ScreenFragment() {
         getString(R.string.notify_about_updates_summary))
       addSwitch(Preferences.Key.UpdateUnstable, getString(R.string.unstable_updates),
         getString(R.string.unstable_updates_summary))
-      if (Android.sdk(VERSION_CODES.M)) {
+      if (Android.sdk(VERSION_CODES.M) && !Preferences[Preferences.Key.IgnoreBatteryOptimizationUnsupported]) {
         val preference = addPreference(Preferences.Key.BatteryOptimization,
           getString(R.string.disable_battery_optimization_title),
           { getString(R.string.disable_battery_optimization_summary) }, null)
@@ -115,10 +116,18 @@ class PreferencesFragment: ScreenFragment() {
   @RequiresApi(VERSION_CODES.M)
   @SuppressLint("BatteryLife")
   private fun requestIgnoreBatteryOptimizations() {
-    val intent = Intent()
-    intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-    intent.data = Uri.parse("package:${BuildConfig.APPLICATION_ID}")
-    this.startActivity(intent)
+    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+    intent.data = Uri.parse("package:" + requireContext().packageName)
+    try {
+      startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+      Toast.makeText(
+        requireContext(),
+        R.string.ignore_battery_optimization_not_supported,
+        Toast.LENGTH_LONG
+      ).show()
+      Preferences[Preferences.Key.IgnoreBatteryOptimizationUnsupported] = true
+    }
   }
 
   override fun onDestroyView() {

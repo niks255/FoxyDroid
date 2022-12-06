@@ -22,7 +22,6 @@
   <string name="author_website">Сайт автора</string>
   <string name="available">Доступно</string>
   <string name="bug_tracker">Баг трекер</string>
-  <string name="battery_optimization_alert">Чтобы обеспечить работу приложения в фоне, необходимо исключить его из оптимизации батареи.</string>
   <string name="disable_battery_optimization_title">Отключить оптимизацию батареи</string>
   <string name="disable_battery_optimization_summary">Оптимизация батареи может помешать работе приложения. Нажмите чтобы отключить.</string>
   <string name="cancel">Отмена</string>
@@ -187,5 +186,10 @@
   <string name="system_black">Системная (черная)</string>
   <string name="use_legacy_installer">Использовать старый установщик</string>
   <string name="use_legacy_installer_summary">Включите если испытываете проблемы с установкой приложений</string>
+  <string name="ignore_battery_optimization_title">Экономия заряда батареи</string>
+  <string name="ignore_battery_optimization_message">Приложение ведёт себя лучше без включённой экономии заряда батареи и предотвращаются сбои на Android 12+.</string>
+  <string name="ignore_battery_optimization_not_supported">Ваша версия Android не поддерживает отключение экономии заряда батареи.</string>
+  <string name="dialog_refuse">Оставить</string>
+  <string name="dialog_approve">Отключить</string>
 
 </resources>

@@ -21,7 +21,11 @@
   <string name="available">Available</string>
   <string name="bug_tracker">Bug tracker</string>
   <string name="black">Black</string>
-  <string name="battery_optimization_alert">To ensure that background tasks work reliably, you need to exclude it from battery optimization.</string>
+  <string name="ignore_battery_optimization_title">Battery Optimization</string>
+  <string name="ignore_battery_optimization_message">The app behaves better without battery optimization, and prevents crashing on Android 12+.</string>
+  <string name="ignore_battery_optimization_not_supported">Your Android installation does not support turning off battery optimization.</string>
+  <string name="dialog_refuse">Keep</string>
+  <string name="dialog_approve">Turn off</string>
   <string name="disable_battery_optimization_title">Disable battery optimization</string>
   <string name="disable_battery_optimization_summary">Battery optimization may cause problems. Tap to disable it.</string>
   <string name="cancel">Cancel</string>
