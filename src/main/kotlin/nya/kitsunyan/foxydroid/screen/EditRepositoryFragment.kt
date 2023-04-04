@@ -410,7 +410,7 @@ class EditRepositoryFragment(): ScreenFragment() {
             }
           }
           .observeOn(AndroidSchedulers.mainThread())
-          .subscribe { result, throwable ->
+          .subscribe { result, throwable: Throwable?->
             checkDisposable = null
             throwable?.printStackTrace()
             val resultAddress = result?.let { if (it.isEmpty()) null else it } ?: address
