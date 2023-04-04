@@ -74,6 +74,7 @@ class ProductAdapter(private val callbacks: Callbacks, private val columns: Int)
     fun onPreferenceChanged(preference: ProductPreference)
     fun onPermissionsClick(group: String?, permissions: List<String>)
     fun onScreenshotClick(screenshot: Product.Screenshot)
+    fun onShareRelease(address: String)
     fun onReleaseClick(release: Release)
     fun onUriClick(uri: Uri, shouldConfirm: Boolean): Boolean
   }
@@ -463,6 +464,7 @@ class ProductAdapter(private val callbacks: Callbacks, private val columns: Int)
     val size = itemView.findViewById<TextView>(R.id.size)!!
     val signature = itemView.findViewById<TextView>(R.id.signature)!!
     val compatibility = itemView.findViewById<TextView>(R.id.compatibility)!!
+    val share = itemView.findViewById<Button>(R.id.share)!!
 
     val statefulViews: Sequence<View>
       get() = sequenceOf(itemView, version, status, source, added, size, signature, compatibility)
@@ -941,6 +943,18 @@ class ProductAdapter(private val callbacks: Callbacks, private val columns: Int)
         itemView.setOnClickListener {
           val releaseItem = items[adapterPosition] as Item.ReleaseItem
           callbacks.onReleaseClick(releaseItem.release)
+        }
+        itemView.setOnLongClickListener {
+          val releaseItem = items[adapterPosition] as Item.ReleaseItem
+          copyLinkToClipboard(
+            itemView.context,
+            releaseItem.release.getDownloadUrl(releaseItem.repository)
+          )
+          true
+        }
+        share.setOnClickListener {
+          val releaseItem = items[adapterPosition] as Item.ReleaseItem
+          callbacks.onShareRelease(releaseItem.release.getDownloadUrl(releaseItem.repository))
         }
       }
       ViewType.EMPTY -> EmptyViewHolder(parent.context)

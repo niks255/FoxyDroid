@@ -447,6 +447,17 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
     }
   }
 
+  override fun onShareRelease(address: String) {
+    val sendIntent: Intent = Intent().apply {
+      this.action = Intent.ACTION_SEND
+      putExtra(Intent.EXTRA_TEXT, address)
+      type = "text/plain"
+    }
+
+    val shareIntent = Intent.createChooser(sendIntent, null)
+    startActivity(shareIntent)
+  }
+
   override fun onReleaseClick(release: Release) {
     val installedItem = installed?.installedItem
     when {
