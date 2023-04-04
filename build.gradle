@@ -24,7 +24,7 @@ android {
 
   defaultConfig {
     applicationId 'nya.kitsunyan.foxydroid'
-    minSdkVersion 21
+    minSdkVersion 23
     //noinspection OldTargetApi
     targetSdkVersion 32
     versionCode 56
