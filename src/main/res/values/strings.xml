@@ -121,6 +121,8 @@
   <string name="password">Password</string>
   <string name="password_missing">Password missing</string>
   <string name="permissions">Permissions</string>
+  <string name="permissions_missing">Missing permissions</string>
+  <string name="permissions_storage_save">External storage access is required for saving APK files</string>
   <string name="plus_more_FORMAT">+%d more</string>
   <string name="preferences">Preferences</string>
   <string name="processing_FORMAT">Processing %1$s</string>
@@ -144,6 +146,7 @@
   <string name="screenshots">Screenshots</string>
   <string name="search">Search</string>
   <string name="select_mirror">Select a mirror</string>
+  <string name="settings">Settings</string>
   <string name="share">Share</string>
   <string name="show_more">Show more</string>
   <string name="show_older_versions">Show older versions</string>

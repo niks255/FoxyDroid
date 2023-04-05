@@ -27,7 +27,7 @@ android {
     minSdkVersion 23
     //noinspection OldTargetApi
     targetSdkVersion 32
-    versionCode 56
+    versionCode 57
     versionName "1.3.$versionCode"
     archivesBaseName = "FoxyDroid-v$versionName"
 

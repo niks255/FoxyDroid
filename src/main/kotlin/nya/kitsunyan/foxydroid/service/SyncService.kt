@@ -322,12 +322,11 @@ class SyncService: ConnectionService<SyncService.Binder>() {
               .use { it.asSequence().map(Database.ProductAdapter::transformItem).toList() } }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe { result, throwable ->
+            .subscribe { result, throwable: Throwable? ->
               throwable?.printStackTrace()
               currentTask = null
               handleNextTask(false)
-              val blocked = updateNotificationBlockerFragment?.get()?.isAdded == true
-              if (!blocked && result != null && result.isNotEmpty()) {
+              if (updateNotificationBlockerFragment?.get()?.isAdded != true && result.isNotEmpty()) {
                 displayUpdatesNotification(result)
               }
             }

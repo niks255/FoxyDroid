@@ -1,6 +1,7 @@
 @file:Suppress("PackageDirectoryMismatch")
 package nya.kitsunyan.foxydroid.utility.extension.android
 
+import android.Manifest
 import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageInfo
@@ -8,6 +9,7 @@ import android.content.pm.Signature
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.os.Build
+import androidx.core.content.ContextCompat.checkSelfPermission
 
 fun Cursor.asSequence(): Sequence<Cursor> {
   return generateSequence { if (moveToNext()) this else null }
@@ -50,6 +52,12 @@ object Android {
 
   val primaryPlatform: String?
     get() = Build.SUPPORTED_64_BIT_ABIS?.firstOrNull() ?: Build.SUPPORTED_32_BIT_ABIS?.firstOrNull()
+
+  fun storagePermission(context: Context): Boolean {
+    return checkSelfPermission(context,
+      Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+  }
 
   fun sdk(sdk: Int): Boolean {
     return Build.VERSION.SDK_INT >= sdk

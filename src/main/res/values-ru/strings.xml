@@ -115,6 +115,8 @@
   <string name="password">Пароль</string>
   <string name="password_missing">Пароль отсутствует</string>
   <string name="permissions">Разрешения</string>
+    <string name="permissions_missing">Требуются разрешения</string>
+  <string name="permissions_storage_save">Для скачивания APK необходимо предоставить доступ к хранилищу</string>
   <string name="plus_more_FORMAT">+%d ещё</string>
   <string name="preferences">Настройки</string>
   <string name="processing_FORMAT">Обработка %1$s</string>
@@ -177,6 +179,7 @@
   <string name="waiting_to_start_download">Ожидание начала загрузки</string>
   <string name="website">Веб-сайт</string>
   <string name="ok">OK</string>
+  <string name="settings">Настройки</string>
   <string name="share">Поделиться</string>
   <string name="clear_cache">Очистить кэш</string>
   <string name="clear_cache_toast">Кэш очищен</string>

@@ -1,6 +1,7 @@
 package nya.kitsunyan.foxydroid.screen
 
 import android.annotation.SuppressLint
+import android.app.DownloadManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -13,6 +14,7 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.os.Environment
 import android.os.Parcel
 import android.text.SpannableStringBuilder
 import android.text.format.DateFormat
@@ -72,6 +74,7 @@ class ProductAdapter(private val callbacks: Callbacks, private val columns: Int)
   interface Callbacks {
     fun onActionClick(action: Action)
     fun onPreferenceChanged(preference: ProductPreference)
+    fun downloadRelease(address: String, versionCode: Long, authentication: String?)
     fun onPermissionsClick(group: String?, permissions: List<String>)
     fun onScreenshotClick(screenshot: Product.Screenshot)
     fun onShareRelease(address: String)
@@ -946,15 +949,22 @@ class ProductAdapter(private val callbacks: Callbacks, private val columns: Int)
         }
         itemView.setOnLongClickListener {
           val releaseItem = items[adapterPosition] as Item.ReleaseItem
-          copyLinkToClipboard(
-            itemView.context,
-            releaseItem.release.getDownloadUrl(releaseItem.repository)
-          )
+          callbacks.downloadRelease(
+            releaseItem.release.getDownloadUrl(releaseItem.repository),
+            releaseItem.release.versionCode,
+            releaseItem.repository.authentication)
           true
         }
         share.setOnClickListener {
           val releaseItem = items[adapterPosition] as Item.ReleaseItem
           callbacks.onShareRelease(releaseItem.release.getDownloadUrl(releaseItem.repository))
+        }
+        share.setOnLongClickListener {
+          val releaseItem = items[adapterPosition] as Item.ReleaseItem
+          copyLinkToClipboard(
+            itemView.context,
+            releaseItem.release.getDownloadUrl(releaseItem.repository))
+          true
         }
       }
       ViewType.EMPTY -> EmptyViewHolder(parent.context)

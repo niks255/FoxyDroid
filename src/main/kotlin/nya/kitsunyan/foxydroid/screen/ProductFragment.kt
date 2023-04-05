@@ -1,19 +1,27 @@
 package nya.kitsunyan.foxydroid.screen
 
+import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.app.AlertDialog
+import android.app.DownloadManager
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.net.Uri
+import android.os.Build.VERSION_CODES.Q
 import android.os.Bundle
+import android.os.Environment
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.Toast
 import android.widget.Toolbar
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -26,19 +34,17 @@ import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
+import nya.kitsunyan.foxydroid.BuildConfig
 import nya.kitsunyan.foxydroid.R
 import nya.kitsunyan.foxydroid.content.ProductPreferences
 import nya.kitsunyan.foxydroid.database.Database
-import nya.kitsunyan.foxydroid.entity.InstalledItem
-import nya.kitsunyan.foxydroid.entity.Product
-import nya.kitsunyan.foxydroid.entity.ProductPreference
-import nya.kitsunyan.foxydroid.entity.Release
-import nya.kitsunyan.foxydroid.entity.Repository
+import nya.kitsunyan.foxydroid.entity.*
 import nya.kitsunyan.foxydroid.installer.AppInstaller
 import nya.kitsunyan.foxydroid.service.Connection
 import nya.kitsunyan.foxydroid.service.DownloadService
 import nya.kitsunyan.foxydroid.utility.RxUtils
 import nya.kitsunyan.foxydroid.utility.Utils
+import nya.kitsunyan.foxydroid.utility.extension.android.Android
 import nya.kitsunyan.foxydroid.widget.DividerItemDecoration
 
 class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
@@ -56,7 +62,11 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
 
   class Nullable<T>(val value: T?)
 
-  private enum class Action(val id: Int, val adapterAction: ProductAdapter.Action, val iconResId: Int,) {
+  private enum class Action(
+    val id: Int,
+    val adapterAction: ProductAdapter.Action,
+    val iconResId: Int
+  ) {
     INSTALL(1, ProductAdapter.Action.INSTALL, R.drawable.ic_archive),
     UPDATE(2, ProductAdapter.Action.UPDATE, R.drawable.ic_update),
     LAUNCH(3, ProductAdapter.Action.LAUNCH, R.drawable.ic_launch),
@@ -65,8 +75,15 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
     SHARE(6, ProductAdapter.Action.SHARE, R.drawable.ic_share)
   }
 
-  private class Installed(val installedItem: InstalledItem, val isSystem: Boolean,
-    val launcherActivities: List<Pair<String, String>>,)
+  private class Installed(
+    val installedItem: InstalledItem, val isSystem: Boolean,
+    val launcherActivities: List<Pair<String, String>>,
+  )
+
+  private class download(
+    var address: String, val authentication: String?,
+    val versionCode: Long
+  )
 
   val packageName: String
     get() = requireArguments().getString(EXTRA_PACKAGE_NAME)!!
@@ -77,9 +94,9 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
   private var products = emptyList<Pair<Product, Repository>>()
   private var installed: Installed? = null
   private var downloading = false
-
   private var toolbar: Toolbar? = null
   private var recyclerView: RecyclerView? = null
+  private var downloadItem: download? = null
 
   private var productDisposable: Disposable? = null
   private var downloadDisposable: Disposable? = null
@@ -90,6 +107,23 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
       }
     }
   })
+
+  private val permissionRequester = registerForActivityResult(
+    ActivityResultContracts.RequestMultiplePermissions()
+  ) { map ->
+    val response = map.entries.first()
+    val isGranted = response.value
+    when {
+      isGranted -> downloadItem?.let {
+        downloadRelease(
+          address = it.address,
+          versionCode = it.versionCode,
+          authentication = it.authentication)
+      } else -> {
+        requirePermission()
+      }
+    }
+  }
 
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
     return inflater.inflate(R.layout.fragment, container, false)
@@ -355,7 +389,8 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
   override fun onActionClick(action: ProductAdapter.Action) {
     when (action) {
       ProductAdapter.Action.INSTALL,
-      ProductAdapter.Action.UPDATE, -> {
+      ProductAdapter.Action.UPDATE,
+      -> {
         val installedItem = installed?.installedItem
         lifecycleScope.launch(Dispatchers.Default) {
           Utils.startUpdate(
@@ -443,6 +478,51 @@ class ProductFragment(): ScreenFragment(), ProductAdapter.Callbacks {
       val (repository, identifier) = pair
       if (identifier != null) {
         ScreenshotsFragment(packageName, repository.id, identifier).show(childFragmentManager)
+      }
+    }
+  }
+
+  private fun requirePermission() {
+    AlertDialog.Builder(requireContext())
+      .setTitle(getString(R.string.permissions_missing))
+      .setMessage(getString(R.string.permissions_storage_save))
+      .setPositiveButton(getString(R.string.settings)) { _, _ ->
+        val intent = Intent()
+        intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+        val uri = Uri.fromParts("package", BuildConfig.APPLICATION_ID, null)
+        intent.data = uri
+        context?.startActivity(intent)
+      }
+      .setNegativeButton(getString(R.string.cancel), null)
+      .create()
+      .show()
+  }
+
+  override fun downloadRelease(address: String, versionCode: Long, authentication: String?) {
+    if (Android.sdk(Q) || Android.storagePermission(requireContext())) {
+      val request = DownloadManager.Request(Uri.parse(address))
+        .addRequestHeader("Authorization", authentication)
+        .setTitle(products[0].first.name)
+        .setDestinationInExternalPublicDir(
+          Environment.DIRECTORY_DOWNLOADS,
+          "${products[0].first.packageName}_${versionCode}.apk"
+        )
+        .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+      val downloadManager =
+        context?.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+      downloadManager.enqueue(request)
+      Toast.makeText(context, getString(R.string.downloading), Toast.LENGTH_LONG).show()
+      downloadItem = null
+    } else {
+      if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(),
+          WRITE_EXTERNAL_STORAGE)) {
+        requirePermission()
+      } else {
+        downloadItem = download(address = address,
+                                versionCode = versionCode,
+                                authentication = authentication)
+        val permissions = arrayOf(WRITE_EXTERNAL_STORAGE)
+        permissionRequester.launch(permissions)
       }
     }
   }
